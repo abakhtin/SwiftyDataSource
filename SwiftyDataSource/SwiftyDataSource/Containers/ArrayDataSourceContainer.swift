@@ -86,6 +86,7 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         
         section.insert(object: object, at: indexPath.row)
         delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: indexPath)
+        delegate?.containerDidChangeContent(self)
     }
 
     public func remove(at indexPath: IndexPath) throws {
@@ -95,6 +96,7 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         }
         arraySection.remove(at: indexPath.row)
         delegate?.container(self, didChange: object, at: indexPath, for: .delete, newIndexPath: nil)
+        delegate?.containerDidChangeContent(self)
     }
 
     public func replace(object: ResultType, at indexPath: IndexPath, reloadAction: Bool = false) throws {
