@@ -85,6 +85,7 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         }
         
         section.insert(object: object, at: indexPath.row)
+        delegate?.containerWillChangeContent(self)
         delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: indexPath)
         delegate?.containerDidChangeContent(self)
     }
@@ -95,6 +96,7 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
             throw ArrayDataSourceContainerError.NonValidIndexPathInsertion
         }
         arraySection.remove(at: indexPath.row)
+        delegate?.containerWillChangeContent(self)
         delegate?.container(self, didChange: object, at: indexPath, for: .delete, newIndexPath: nil)
         delegate?.containerDidChangeContent(self)
     }
