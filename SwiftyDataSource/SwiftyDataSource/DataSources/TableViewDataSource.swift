@@ -263,9 +263,15 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     open func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? { return nil }
     
     @available(iOS 11.0, *)
-    open func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? { return nil }
+    open func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard let object = object(at: indexPath) else { return nil }
+        return self.delegate?.dataSourceLeadingSwipeActions(self, didSwipe: object, at: indexPath)
+    }
     @available(iOS 11.0, *)
-    open func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? { return nil }
+    open func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard let object = object(at: indexPath) else { return nil }
+        return self.delegate?.dataSourceTrailingSwipeActions(self, didSwipe: object, at: indexPath)
+    }
     
     open func tableView(_ tableView: UITableView, shouldIndentWhileEditingRowAt indexPath: IndexPath) -> Bool { return true }
     open func tableView(_ tableView: UITableView, willBeginEditingRowAt indexPath: IndexPath) { }

@@ -17,6 +17,8 @@ public protocol TableViewDataSourceDelegate: class {
     func dataSource(_ dataSource: DataSourceProtocol, didSelect object: ObjectType, at indexPath: IndexPath)
     func dataSource(_ dataSource: DataSourceProtocol, didDeselect object: ObjectType, at indexPath: IndexPath?)
     func dataSourceDidScrollToLastElement(_ dataSource: DataSourceProtocol)
+    func dataSourceLeadingSwipeActions(_ dataSource: DataSourceProtocol, didSwipe object: ObjectType, at indexPath: IndexPath) -> UISwipeActionsConfiguration?
+    func dataSourceTrailingSwipeActions(_ dataSource: DataSourceProtocol, didSwipe object: ObjectType, at indexPath: IndexPath) -> UISwipeActionsConfiguration?
 }
 
 // MARK: Default implementation as all of methods are optional
@@ -33,6 +35,12 @@ public extension TableViewDataSourceDelegate {
     func dataSource(_ dataSource: DataSourceProtocol, didSelect object: ObjectType, at indexPath: IndexPath) { }
     func dataSource(_ dataSource: DataSourceProtocol, didDeselect object: ObjectType, at indexPath: IndexPath?) { }
     func dataSourceDidScrollToLastElement(_ dataSource: DataSourceProtocol) { }
+    func dataSourceLeadingSwipeActions(_ dataSource: DataSourceProtocol, didSwipe object: ObjectType, at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        return nil
+    }
+    func dataSourceTrailingSwipeActions(_ dataSource: DataSourceProtocol, didSwipe object: ObjectType, at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        return nil
+    }
 }
 
 
@@ -45,6 +53,8 @@ public class AnyTableViewDataSourceDelegate<T>: TableViewDataSourceDelegate {
         _dataSourceDidSelectObjectAtIndexPath = { [weak delegate] in delegate?.dataSource($0, didSelect: $1, at: $2) }
         _dataSourceDidDeselectObjectAtIndexPath = { [weak delegate] in delegate?.dataSource($0, didDeselect: $1, at: $2) }
         _dataSourceDidScrollToLastElement = { [weak delegate] in delegate?.dataSourceDidScrollToLastElement($0)}
+        _dataSourceLeadingSwipeActions = { [weak delegate] in delegate?.dataSourceLeadingSwipeActions($0, didSwipe: $1, at: $2)}
+        _dataSourceTrailingSwipeActions = { [weak delegate] in delegate?.dataSourceTrailingSwipeActions($0, didSwipe: $1, at: $2)}
     }
 
     private let _dataSourceCellIdentifierForObjectAtIndexPath: (DataSourceProtocol, T, IndexPath) -> String?
@@ -52,6 +62,16 @@ public class AnyTableViewDataSourceDelegate<T>: TableViewDataSourceDelegate {
     private let _dataSourceDidSelectObjectAtIndexPath: (DataSourceProtocol, T, IndexPath) -> Void
     private let _dataSourceDidDeselectObjectAtIndexPath: (DataSourceProtocol, T, IndexPath?) -> Void
     private let _dataSourceDidScrollToLastElement: (DataSourceProtocol) -> Void
+    private let _dataSourceLeadingSwipeActions: (DataSourceProtocol, T, IndexPath) -> UISwipeActionsConfiguration?
+    private let _dataSourceTrailingSwipeActions: (DataSourceProtocol, T, IndexPath) -> UISwipeActionsConfiguration?
+    
+    public func dataSourceTrailingSwipeActions(_ dataSource: DataSourceProtocol, didSwipe object: T, at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        return _dataSourceTrailingSwipeActions(dataSource, object, indexPath)
+    }
+    
+    public func dataSourceLeadingSwipeActions(_ dataSource: DataSourceProtocol, didSwipe object: T, at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        return _dataSourceLeadingSwipeActions(dataSource, object, indexPath)
+    }
     
     public func dataSourceDidScrollToLastElement(_ dataSource: DataSourceProtocol) {
         return _dataSourceDidScrollToLastElement(dataSource)
