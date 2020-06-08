@@ -9,6 +9,31 @@
 import UIKit
 
 public extension UIView {
+    enum Corner: Int {
+        case bottomRight = 0,
+        topRight,
+        bottomLeft,
+        topLeft
+    }
+    
+    private func round(corner: Corner) -> CACornerMask.Element {
+        let corners: [CACornerMask.Element] = [.layerMaxXMaxYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMinXMinYCorner]
+        return corners[corner.rawValue]
+    }
+    
+    private func createMask(corners: [Corner]) -> UInt {
+        return corners.reduce(0, { (a, b) -> UInt in
+            return a + round(corner: b).rawValue
+        })
+    }
+    
+    @available(iOS 11, *)
+    func round(corners: [Corner], byRadius value: CGFloat) {
+        layer.cornerRadius = value
+        let maskedCorners: CACornerMask = CACornerMask(rawValue: createMask(corners: corners))
+        layer.maskedCorners = maskedCorners
+    }
+    
     
     // Should be called after views layout
     func round(corners: UIRectCorner, byRadius value: CGFloat) {
