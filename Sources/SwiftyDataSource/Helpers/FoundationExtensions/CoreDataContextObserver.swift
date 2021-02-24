@@ -89,7 +89,7 @@ public class CoreDataContextObserver<T> where T: NSManagedObject {
 
         contextChangeBlock?(notification, combinedObjectChanges)
         
-        let combinedSet = insertedObjectsSet.union(updatedObjectsSet).union(deletedObjectsSet)
+        let combinedSet = insertedObjectsSet.union(updatedObjectsSet).union(deletedObjectsSet).union(refreshedObjectsSet)
         let allObjectIDs = Array(actionsForManagedObjectID.keys)
         let filteredObjects = combinedSet.filter({ allObjectIDs.contains($0.objectID) })
         
