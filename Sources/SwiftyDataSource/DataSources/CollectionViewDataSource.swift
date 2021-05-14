@@ -145,7 +145,12 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
     public func container(_ container: DataSourceContainerProtocol, didChange sectionInfo: DataSourceSectionInfo, atSectionIndex sectionIndex: Int, for type: DataSourceObjectChangeType) {
         switch (type) {
         case .insert:
-            blockOperations.append(BlockOperation { self.collectionView?.insertSections(IndexSet(integer: sectionIndex)) })
+            // iOS bug workaround https://stackoverflow.com/questions/19199985/invalid-update-invalid-number-of-items-on-uicollectionview
+            if (self.collectionView?.numberOfSections == 0) {
+                self.collectionView?.reloadData()
+            } else {
+                blockOperations.append(BlockOperation { self.collectionView?.insertSections(IndexSet(integer: sectionIndex)) })
+            }
         case .delete:
             blockOperations.append(BlockOperation { self.collectionView?.deleteSections(IndexSet(integer: sectionIndex)) })
         case .update: fallthrough
@@ -161,7 +166,12 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
         switch type {
         case .insert:
             if let newIndexPath = newIndexPath {
-                blockOperations.append(BlockOperation { self.collectionView?.insertItems(at: [newIndexPath]) })
+                // iOS bug workaround https://stackoverflow.com/questions/19199985/invalid-update-invalid-number-of-items-on-uicollectionview
+                if (self.collectionView?.numberOfSections == 0) {
+                    self.collectionView?.reloadData()
+                } else {
+                    blockOperations.append(BlockOperation { self.collectionView?.insertItems(at: [newIndexPath]) })
+                }
             }
         case .delete:
             if let indexPath = indexPath {
