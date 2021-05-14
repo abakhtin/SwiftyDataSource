@@ -146,9 +146,12 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
         switch (type) {
         case .insert:
             blockOperations.append(BlockOperation {
-                //<-- This code is no used, but it will let UICollectionView synchronize number of items, so it will not crash in following code.
-                self.collectionView?.numberOfItems(inSection: 0)
-                self.collectionView?.insertSections(IndexSet(integer: sectionIndex))
+                // Workaround for https://stackoverflow.com/questions/19199985/invalid-update-invalid-number-of-items-on-uicollectionview
+                if self.container?.fetchedObjects?.count == 1 || self.collectionView?.numberOfItems(inSection: 0) == self.container?.numberOfItems(in: 0) {
+                    self.collectionView?.reloadData()
+                } else {
+                    self.collectionView?.insertSections(IndexSet(integer: sectionIndex))
+                }
             })
         case .delete:
             blockOperations.append(BlockOperation { self.collectionView?.deleteSections(IndexSet(integer: sectionIndex)) })
@@ -166,9 +169,12 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
         case .insert:
             if let newIndexPath = newIndexPath {
                 blockOperations.append(BlockOperation {
-                    //<-- This code is no used, but it will let UICollectionView synchronize number of items, so it will not crash in following code.
-                    self.collectionView?.numberOfItems(inSection: 0)
-                    self.collectionView?.insertItems(at: [newIndexPath])
+                    // Workaround for https://stackoverflow.com/questions/19199985/invalid-update-invalid-number-of-items-on-uicollectionview
+                    if self.container?.fetchedObjects?.count == 1 || self.collectionView?.numberOfItems(inSection: 0) == self.container?.numberOfItems(in: 0) {
+                        self.collectionView?.reloadData()
+                    } else {
+                        self.collectionView?.insertItems(at: [newIndexPath])
+                    }
                 })
             }
         case .delete:
