@@ -130,10 +130,11 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle)
         if sectionIndex == self.arraySections.count {
             self.arraySections.insert(section, at: sectionIndex)
+            delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
         } else {
             self.arraySections[sectionIndex] = section
+            delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .update)
         }
-        delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .update)
     }
 
     // MARK: Method allows to add objects to new section. If newSectionIndex is nil, add to the end.
