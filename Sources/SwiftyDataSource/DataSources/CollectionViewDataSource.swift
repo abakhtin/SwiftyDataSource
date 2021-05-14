@@ -147,7 +147,7 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
         case .insert:
             blockOperations.append(BlockOperation {
                 // Workaround for https://stackoverflow.com/questions/19199985/invalid-update-invalid-number-of-items-on-uicollectionview
-                if self.container?.fetchedObjects?.count == 1 || self.collectionView?.numberOfItems(inSection: 0) == self.container?.numberOfItems(in: 0) {
+                if self.collectionView?.numberOfSections == 1 && self.collectionView?.numberOfItems(inSection: 0) == self.container?.numberOfItems(in: 0) {
                     self.collectionView?.reloadData()
                 } else {
                     self.collectionView?.insertSections(IndexSet(integer: sectionIndex))
@@ -170,7 +170,7 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
             if let newIndexPath = newIndexPath {
                 blockOperations.append(BlockOperation {
                     // Workaround for https://stackoverflow.com/questions/19199985/invalid-update-invalid-number-of-items-on-uicollectionview
-                    if self.container?.fetchedObjects?.count == 1 || self.collectionView?.numberOfItems(inSection: 0) == self.container?.numberOfItems(in: 0) {
+                    if self.collectionView?.numberOfSections == 1 && self.collectionView?.numberOfItems(inSection: 0) == self.container?.numberOfItems(in: 0) {
                         self.collectionView?.reloadData()
                     } else {
                         self.collectionView?.insertItems(at: [newIndexPath])
