@@ -41,6 +41,9 @@ public class LeftAlignmentFlowLayout: UICollectionViewFlowLayout {
             // Loop on cells to adjust each cell's origin and prepare leftInset for the next cell
             for attribute in attributes {
                 attribute.frame.origin.x = leftInset
+                if let collectionView = collectionView {
+                    attribute.frame.size.width = min(attribute.frame.width, collectionView.frame.width - sectionInset.left - sectionInset.right)
+                }
                 leftInset = attribute.frame.maxX + minimumInteritemSpacing
             }
         }

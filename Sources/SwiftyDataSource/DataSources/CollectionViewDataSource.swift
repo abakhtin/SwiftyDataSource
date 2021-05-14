@@ -133,6 +133,23 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
 }
 
 extension CollectionViewDataSource: DataSourceContainerDelegate {
+    
+    public func containerWillChangeContent(_ container: DataSourceContainerProtocol) {
+    }
+    
+    public func container(_ container: DataSourceContainerProtocol, didChange sectionInfo: DataSourceSectionInfo, atSectionIndex sectionIndex: Int, for type: DataSourceObjectChangeType) {
+        switch (type) {
+        case .insert:
+            collectionView?.insertSections(IndexSet(integer: sectionIndex))
+        case .delete:
+            collectionView?.deleteSections(IndexSet(integer: sectionIndex))
+        case .update:
+            collectionView?.reloadSections(IndexSet(integer: sectionIndex))
+        default:
+            collectionView?.reloadData()
+        }
+    }
+    
     public func container(_ container: DataSourceContainerProtocol, didChange anObject: Any, at indexPath: IndexPath?, for type: DataSourceObjectChangeType, newIndexPath: IndexPath?) {
         switch type {
         case .insert:
