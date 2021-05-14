@@ -11,7 +11,7 @@ import UIKit
 
 // MARK: DataSource for customizing default behaviour of dataSource
 
-public protocol TableViewDataSourceDelegate: class {
+public protocol TableViewDataSourceDelegate: AnyObject {
     associatedtype ObjectType
     func dataSource(_ dataSource: DataSourceProtocol, cellIdentifierFor object: ObjectType, at indexPath: IndexPath) -> String?
     func dataSource(_ dataSource: DataSourceProtocol, accessoryTypeFor object: ObjectType, at indexPath: IndexPath) -> UITableViewCell.AccessoryType?

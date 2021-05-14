@@ -128,7 +128,11 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
             throw ArrayDataSourceContainerError.NonValidIndexPathInsertion
         }
         let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle)
-        self.arraySections[sectionIndex] = section
+        if sectionIndex == self.arraySections.count {
+            self.arraySections.insert(section, at: sectionIndex)
+        } else {
+            self.arraySections[sectionIndex] = section
+        }
         delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .update)
     }
 

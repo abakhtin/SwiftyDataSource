@@ -103,7 +103,7 @@ public class DataSourceContainer<ResultType>: DataSourceContainerProtocol {
 
 // MARK: DataSourceContainerDelegate
 
-public protocol DataSourceContainerDelegate: class {
+public protocol DataSourceContainerDelegate: AnyObject {
     
     // MARK: - Optional
 

@@ -9,7 +9,7 @@
 #if os(iOS)
 import UIKit
 
-public protocol CollectionViewDataSourceDelegate: class {
+public protocol CollectionViewDataSourceDelegate: AnyObject {
     associatedtype ObjectType
     func dataSource(_ dataSource: DataSourceProtocol, cellIdentifierFor object: ObjectType, at indexPath: IndexPath) -> String?
     func dataSource(_ dataSource: DataSourceProtocol, didSelect object: ObjectType, at indexPath: IndexPath)
