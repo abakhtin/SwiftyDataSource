@@ -120,7 +120,9 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
 
         section.replace(object: object, at: indexPath.row)
         
+        delegate?.containerWillChangeContent(self)
         delegate?.container(self, didChange: object, at: indexPath, for: reloadAction ? .reload : .update, newIndexPath: indexPath)
+        delegate?.containerDidChangeContent(self)
     }
 
     public func replace(sectionObjects: [ResultType], at sectionIndex: Int, named name: String = "", indexTitle: String? = nil) throws {
@@ -128,6 +130,8 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
             throw ArrayDataSourceContainerError.NonValidIndexPathInsertion
         }
         let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle)
+
+        delegate?.containerWillChangeContent(self)
         if sectionIndex == self.arraySections.count {
             self.arraySections.insert(section, at: sectionIndex)
             delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
@@ -135,6 +139,7 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
             self.arraySections[sectionIndex] = section
             delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .update)
         }
+        delegate?.containerDidChangeContent(self)
     }
 
     // MARK: Method allows to add objects to new section. If newSectionIndex is nil, add to the end.
