@@ -26,6 +26,7 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         super.init()
         self.collectionView?.dataSource = self
         self.collectionView?.delegate = self
+        self.container?.delegate = self
     }
 
     // MARK: Public properties
@@ -130,23 +131,29 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         configurableView.configure(with: sectionInfo)
         return view
     }
+    
+    private var blockOperations: [BlockOperation] = []
+
 }
 
 extension CollectionViewDataSource: DataSourceContainerDelegate {
     
     public func containerWillChangeContent(_ container: DataSourceContainerProtocol) {
+        blockOperations.removeAll(keepingCapacity: false)
     }
     
     public func container(_ container: DataSourceContainerProtocol, didChange sectionInfo: DataSourceSectionInfo, atSectionIndex sectionIndex: Int, for type: DataSourceObjectChangeType) {
         switch (type) {
         case .insert:
-            collectionView?.insertSections(IndexSet(integer: sectionIndex))
+            blockOperations.append(BlockOperation { self.collectionView?.insertSections(IndexSet(integer: sectionIndex)) })
         case .delete:
-            collectionView?.deleteSections(IndexSet(integer: sectionIndex))
-        case .update:
-            collectionView?.reloadSections(IndexSet(integer: sectionIndex))
-        default:
-            collectionView?.reloadData()
+            blockOperations.append(BlockOperation { self.collectionView?.deleteSections(IndexSet(integer: sectionIndex)) })
+        case .update: fallthrough
+        case .reload:
+            blockOperations.append(BlockOperation { self.collectionView?.reloadSections(IndexSet(integer: sectionIndex)) })
+        case .move: fallthrough
+        case .reloadAll:
+            blockOperations.append(BlockOperation { self.collectionView?.reloadData() })
         }
     }
     
@@ -154,15 +161,15 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
         switch type {
         case .insert:
             if let newIndexPath = newIndexPath {
-                collectionView?.insertItems(at: [newIndexPath])
+                blockOperations.append(BlockOperation { self.collectionView?.insertItems(at: [newIndexPath]) })
             }
         case .delete:
             if let indexPath = indexPath {
-                collectionView?.deleteItems(at: [indexPath])
+                blockOperations.append(BlockOperation { self.collectionView?.deleteItems(at: [indexPath]) })
             }
         case .move:
             if let indexPath = indexPath, let newIndexPath = newIndexPath {
-                collectionView?.moveItem(at: indexPath, to: newIndexPath)
+                blockOperations.append(BlockOperation { self.collectionView?.moveItem(at: indexPath, to: newIndexPath) })
             }
         case .update:
             if let indexPath = indexPath, let cell = collectionView?.cellForItem(at: indexPath) as? DataSourceConfigurable, let object = object(at: indexPath) {
@@ -171,7 +178,7 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
           
         case .reload:
             if let indexPath = indexPath {
-                collectionView?.reloadItems(at: [indexPath])
+                blockOperations.append(BlockOperation { self.collectionView?.reloadItems(at: [indexPath]) })
             }
         case .reloadAll:
             collectionView?.reloadData()
@@ -179,6 +186,11 @@ extension CollectionViewDataSource: DataSourceContainerDelegate {
     }
     
     public func containerDidChangeContent(_ container: DataSourceContainerProtocol) {
+        self.collectionView?.performBatchUpdates({
+            self.blockOperations.forEach { $0.start() }
+        }, completion: { finished in
+            self.blockOperations.removeAll(keepingCapacity: false)
+        })
         showNoDataViewIfNeeded()
     }
   
