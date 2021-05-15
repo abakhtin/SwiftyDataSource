@@ -42,11 +42,12 @@ public class LeftAlignmentFlowLayout: UICollectionViewFlowLayout {
             for attribute in attributes {
                 attribute.frame.origin.x = leftInset
                 if let collectionView = collectionView {
-                    attribute.frame.size.width = min(attribute.frame.width, collectionView.frame.width - sectionInset.left - sectionInset.right)
+                    attribute.frame.size.width = min(attribute.frame.width, collectionView.frame.width - sectionInset.left - sectionInset.right - collectionView.contentInset.left - collectionView.contentInset.right - 1)
                 }
                 leftInset = attribute.frame.maxX + minimumInteritemSpacing
             }
         }
+        
         return layoutAttributes
     }
 }
