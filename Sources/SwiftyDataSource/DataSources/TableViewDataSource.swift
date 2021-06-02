@@ -50,9 +50,9 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     // Autolayout does not work correctly for this views
     public var headerIdentifier: String?
     public var footerIdentifier: String?
-    public var headerHeight: CGFloat = 0.01
+    public var headerHeight: CGFloat = 0.0
     public var removeEmptyHeaders: Bool = true
-    public var footerHeight: CGFloat = 0.01
+    public var footerHeight: CGFloat = 0.0
 
     public var delegate: AnyTableViewDataSourceDelegate<ObjectType>?
 
@@ -234,7 +234,7 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     open func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         let length = sectionInfo(at: section)?.name.count
         if removeEmptyHeaders && length == 0 {
-            return 0.01
+            return 0.0
         } else {
             return headerHeight
         }
