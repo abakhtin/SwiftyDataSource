@@ -11,7 +11,7 @@ import UIKit
 
 public class LeftAlignmentFlowLayout: UICollectionViewFlowLayout {
     
-    public required init(minimumInteritemSpacing: CGFloat = 0, minimumLineSpacing: CGFloat = 0, sectionInset: UIEdgeInsets = .zero, scrollDirection: UICollectionView.ScrollDirection = .vertical) {
+    public required init(_ interitemSpacing: CGFloat = 0, _ lineSpacing: CGFloat = 0, _ sectionInset: UIEdgeInsets = .zero, _ scrollDirection: UICollectionView.ScrollDirection = .vertical) {
         super.init()
         
         estimatedItemSize = UICollectionViewFlowLayout.automaticSize
