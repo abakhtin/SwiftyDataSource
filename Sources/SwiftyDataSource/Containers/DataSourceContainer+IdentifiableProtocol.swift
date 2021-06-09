@@ -19,5 +19,15 @@ extension DataSourceContainer where ResultType: IdentifiableProtocol {
             return object.id == objectInContainer.id
         }
     }
+
+    public func objectsInContainer(forIdentifiable object: IdentifiableProtocol) -> [ResultType]  {
+        var objects = [ResultType]()
+        enumerate { _, objectInContainer in
+            if object.id == objectInContainer.id {
+                objects.append(objectInContainer)
+            }
+        }
+        return objects
+    }
 }
 #endif
