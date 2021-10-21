@@ -20,6 +20,7 @@ public class UIDocumentInteractionControllerPresenter: NSObject, UIDocumentInter
         if !presented {
             // If UIDocumentInteractionController do not support file, show UIActivityViewController to allow user to choose 
             let activityViewController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            activityViewController.popoverPresentationController?.sourceView = viewController.navigationController?.navigationBar
             viewController.present(activityViewController, animated: true)
         }
     }
