@@ -238,7 +238,7 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
         } else if let headerHeight = headerHeight {
             return headerHeight
         } else {
-            UITableView.automaticDimension
+            return UITableView.automaticDimension
         }
     }
     
