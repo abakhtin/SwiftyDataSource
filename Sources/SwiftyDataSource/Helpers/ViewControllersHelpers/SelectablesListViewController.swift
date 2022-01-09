@@ -57,7 +57,7 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
     
     // MARK: Actions
     
-    @objc private func done(_ sender: AnyObject) {
+    @objc public func done(_ sender: AnyObject) {
         didSelectMultiAction?(selectedEntries)
         delegate?.listDidSelect(self, entities: selectedEntries)
     }
