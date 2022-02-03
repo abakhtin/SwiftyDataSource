@@ -13,9 +13,12 @@ public class UIDocumentInteractionControllerPresenter: NSObject, UIDocumentInter
     
     private static let defaultPresenter = UIDocumentInteractionControllerPresenter()
     
-    public static func showDocumentInteractionController(for url: URL, from viewController: UIViewController) {
+    public static func showDocumentInteractionController(for url: URL, from viewController: UIViewController, with name: String? = nil) {
         defaultPresenter.viewControllerForPreview = viewController
         defaultPresenter.documentInteractionController.url = url
+        if let name = name {
+            defaultPresenter.documentInteractionController.name = name
+        }
         let presented = defaultPresenter.documentInteractionController.presentPreview(animated: true)
         if !presented {
             // If UIDocumentInteractionController do not support file, show UIActivityViewController to allow user to choose 
