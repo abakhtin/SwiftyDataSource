@@ -11,11 +11,19 @@
 import Foundation
 import UIKit
 
-protocol ChildConfigurable: UIViewController {
+public protocol ChildConfigurable: UIViewController {
     var childViewController: UIViewController? { get set }
+    var childViewControllerContainer: UIView! { get }
 }
 
-extension ChildConfigurable {
+public extension ChildConfigurable {
+    
+    var childViewControllerContainer: UIView! {
+        get {
+            return self.view
+        }
+    }
+    
     func setChildViewController(_ childViewController: UIViewController?) {
         guard childViewController != self.childViewController else { return }
         
@@ -27,12 +35,10 @@ extension ChildConfigurable {
         self.childViewController = childViewController
         
         guard let childViewController = childViewController else { return }
-        addChildViewController(childViewController, to: view)
+        addChild(childViewController, to: childViewControllerContainer)
     }
-}
-
-extension UIViewController {
-    func addChildViewController(_ childViewController: UIViewController, to view: UIView) {
+    
+    func addChild(_ childViewController: UIViewController, to view: UIView) {
         addChild(childViewController)
         view.addSubview(childViewController.view)
         childViewController.view.translatesAutoresizingMaskIntoConstraints = false
