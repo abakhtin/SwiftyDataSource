@@ -26,6 +26,7 @@
 		B84F3CA521CAFE1600489349 /* DataSourceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84F3C8821CAFE1600489349 /* DataSourceViews.swift */; };
 		B84F3CA621CAFE1600489349 /* TableViewDataSourceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84F3C8921CAFE1600489349 /* TableViewDataSourceDelegate.swift */; };
 		B84F3CA721CAFE1600489349 /* DataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84F3C8A21CAFE1600489349 /* DataSource.swift */; };
+		B88E0E9D27DFD283001705FE /* ChildConfigurable.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88E0E9C27DFD283001705FE /* ChildConfigurable.swift */; };
 		B8A9FE7622E5D421000E3DDC /* String+digitsOnly.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A9FE7522E5D421000E3DDC /* String+digitsOnly.swift */; };
 		B8BEC0662315864C0028439E /* FilterableDataSourceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BEC0652315864C0028439E /* FilterableDataSourceContainer.swift */; };
 		B8BEC06823158F8C0028439E /* SelectableEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BEC06723158F8C0028439E /* SelectableEntity.swift */; };
@@ -87,6 +88,7 @@
 		B84F3C8821CAFE1600489349 /* DataSourceViews.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataSourceViews.swift; sourceTree = "<group>"; };
 		B84F3C8921CAFE1600489349 /* TableViewDataSourceDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableViewDataSourceDelegate.swift; sourceTree = "<group>"; };
 		B84F3C8A21CAFE1600489349 /* DataSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataSource.swift; sourceTree = "<group>"; };
+		B88E0E9C27DFD283001705FE /* ChildConfigurable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChildConfigurable.swift; sourceTree = "<group>"; };
 		B8A9FE7522E5D421000E3DDC /* String+digitsOnly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "String+digitsOnly.swift"; sourceTree = "<group>"; };
 		B8BEC0652315864C0028439E /* FilterableDataSourceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterableDataSourceContainer.swift; sourceTree = "<group>"; };
 		B8BEC06723158F8C0028439E /* SelectableEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableEntity.swift; sourceTree = "<group>"; };
@@ -253,6 +255,7 @@
 		B8F4AC1A2267869100F85471 /* ViewControllersHelpers */ = {
 			isa = PBXGroup;
 			children = (
+				B88E0E9C27DFD283001705FE /* ChildConfigurable.swift */,
 				B83ED0E6231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift */,
 				B8F4AC1B2267869100F85471 /* SelectablesListViewController.swift */,
 				B8BEC06923158FBC0028439E /* SelectablesListDelegate.swift */,
@@ -410,6 +413,7 @@
 				B84F3CA221CAFE1600489349 /* CollectionViewDataSource.swift in Sources */,
 				B84F3CA721CAFE1600489349 /* DataSource.swift in Sources */,
 				B8F4AC1D2267869100F85471 /* UITableViewCell+Position.swift in Sources */,
+				B88E0E9D27DFD283001705FE /* ChildConfigurable.swift in Sources */,
 				B8BEC0662315864C0028439E /* FilterableDataSourceContainer.swift in Sources */,
 				B8F4AC242267869100F85471 /* UITableViewCell+Types.swift in Sources */,
 				D1EE606F23D063A1008540C3 /* LeftAlignmentFlowLayout.swift in Sources */,
