@@ -55,6 +55,18 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
         tableView.registerCellClassForDefaultIdentifier(SelectablesListCell.self)
     }
     
+    open func addTableHeaderView(in tableView: UITableView) {
+        tableView.tableHeaderView = nil
+    }
+    
+    open func selectAllButttonItemTitle() -> String? {
+        return NSLocalizedString("SELECT_ALL", comment: "")
+    }
+    
+    open func deselectAllButttonItemTitle() -> String? {
+        return NSLocalizedString("DESELECT_ALL", comment: "")
+    }
+    
     // MARK: Actions
     
     @objc public func done(_ sender: AnyObject) {
@@ -85,6 +97,7 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
         tableView.allowsMultipleSelection = true
         
         registerCell(in: tableView)
+        addTableHeaderView(in: tableView)
         dataSource.tableView = tableView
 
         return tableView
@@ -140,9 +153,9 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
 
     // MARK: Navigation items
     
-    private lazy var selectAllButttonItem = UIBarButtonItem(title: NSLocalizedString("SELECT_ALL", comment: ""), style: .plain, target: self, action: #selector(selectAllEntries(_:)))
+    private lazy var selectAllButttonItem = UIBarButtonItem(title: selectAllButttonItemTitle(), style: .plain, target: self, action: #selector(selectAllEntries(_:)))
     
-    private lazy var deselectAllButttonItem = UIBarButtonItem(title: NSLocalizedString("DESELECT_ALL", comment: ""), style: .plain, target: self, action: #selector(deselectAllEntries(_:)))
+    private lazy var deselectAllButttonItem = UIBarButtonItem(title: deselectAllButttonItemTitle(), style: .plain, target: self, action: #selector(deselectAllEntries(_:)))
 
     private func updateNavigationItems() {
         if self.multiselection {
