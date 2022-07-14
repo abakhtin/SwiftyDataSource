@@ -140,9 +140,9 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
 
     // MARK: Navigation items
     
-    private(set) lazy var selectAllButtonItem = UIBarButtonItem(title: NSLocalizedString("SELECT_ALL", comment: ""), style: .plain, target: self, action: #selector(selectAllEntries(_:)))
+    public private(set) lazy var selectAllButtonItem = UIBarButtonItem(title: NSLocalizedString("SELECT_ALL", comment: ""), style: .plain, target: self, action: #selector(selectAllEntries(_:)))
     
-    private(set) lazy var deselectAllButtonItem = UIBarButtonItem(title: NSLocalizedString("DESELECT_ALL", comment: ""), style: .plain, target: self, action: #selector(deselectAllEntries(_:)))
+    public private(set) lazy var deselectAllButtonItem = UIBarButtonItem(title: NSLocalizedString("DESELECT_ALL", comment: ""), style: .plain, target: self, action: #selector(deselectAllEntries(_:)))
 
     private func updateNavigationItems() {
         if self.multiselection {
