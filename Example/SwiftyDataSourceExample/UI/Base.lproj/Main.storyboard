@@ -1,55 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16096" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="c87-dC-myg">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="c87-dC-myg">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16086"/>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
         <!--Google maps-->
         <scene sceneID="Ppw-KG-tlq">
             <objects>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="BMA-hi-TcK" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <viewController id="xAl-gB-7Fv" customClass="GoogleMapsViewController" customModule="SwiftyDataSourceExample" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="RHi-1j-4NF">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
                         <viewLayoutGuide key="safeArea" id="eMR-S9-Bgb"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <tabBarItem key="tabBarItem" title="Google maps" id="VeJ-bN-THi"/>
                 </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="BMA-hi-TcK" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-628" y="279"/>
         </scene>
         <!--MapKit-->
         <scene sceneID="kvP-kR-Fcu">
             <objects>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Mde-l4-qBR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <viewController id="Ktt-dG-7gY" customClass="MapKitViewController" customModule="SwiftyDataSourceExample" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="BYl-jI-2fq">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <mapView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" mapType="standard" translatesAutoresizingMaskIntoConstraints="NO" id="GtF-lD-qYE">
-                                <rect key="frame" x="0.0" y="0.0" width="375" height="618"/>
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                             </mapView>
                         </subviews>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <viewLayoutGuide key="safeArea" id="xvF-Pa-5bz"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstItem="GtF-lD-qYE" firstAttribute="trailing" secondItem="xvF-Pa-5bz" secondAttribute="trailing" id="4eL-v2-Ykc"/>
                             <constraint firstItem="GtF-lD-qYE" firstAttribute="leading" secondItem="xvF-Pa-5bz" secondAttribute="leading" id="Tq2-nV-46q"/>
                             <constraint firstItem="GtF-lD-qYE" firstAttribute="bottom" secondItem="xvF-Pa-5bz" secondAttribute="bottom" id="WkK-bl-duX"/>
                             <constraint firstItem="GtF-lD-qYE" firstAttribute="top" secondItem="BYl-jI-2fq" secondAttribute="top" id="pOB-EK-Wcm"/>
                         </constraints>
-                        <viewLayoutGuide key="safeArea" id="xvF-Pa-5bz"/>
                     </view>
                     <tabBarItem key="tabBarItem" title="MapKit" id="YQq-Lc-y5H"/>
                     <connections>
                         <outlet property="mapView" destination="GtF-lD-qYE" id="cO2-cP-t1d"/>
                     </connections>
                 </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="Mde-l4-qBR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-628.98550724637687" y="-369.64285714285711"/>
         </scene>
@@ -62,14 +64,15 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </tabBar>
-                    <connections>
-                        <segue destination="Ktt-dG-7gY" kind="relationship" relationship="viewControllers" id="dd9-Dl-aX6"/>
-                        <segue destination="xAl-gB-7Fv" kind="relationship" relationship="viewControllers" id="Uxr-8P-qRx"/>
-                    </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="jK1-0V-8nH" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-1546" y="-46"/>
         </scene>
     </scenes>
+    <resources>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
 </document>

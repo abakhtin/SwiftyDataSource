@@ -8,7 +8,6 @@
 
 import UIKit
 import MapKit
-import SwiftyDataSource
 
 class MapKitViewController: UIViewController, MapViewDataSourceDelegate {
     
@@ -30,7 +29,7 @@ class MapKitViewController: UIViewController, MapViewDataSourceDelegate {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        dataContainer.add(sectionObjects: [testMark])
+//        dataContainer.add(sectionObjects: [testMark])
 //        dataContainer.removeAll()
 //        try? dataContainer.replace(sectionObjects: [testMark], at: 0)
     }
