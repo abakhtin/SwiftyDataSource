@@ -59,11 +59,11 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
         tableView.tableHeaderView = nil
     }
     
-    open func selectAllButttonItemTitle() -> String? {
+    open func selectAllButtonItemTitle() -> String? {
         return NSLocalizedString("SELECT_ALL", comment: "")
     }
     
-    open func deselectAllButttonItemTitle() -> String? {
+    open func deselectAllButtonItemTitle() -> String? {
         return NSLocalizedString("DESELECT_ALL", comment: "")
     }
     
@@ -153,14 +153,14 @@ open class SelectablesListViewController<T>: UIViewController, UISearchResultsUp
 
     // MARK: Navigation items
     
-    private lazy var selectAllButttonItem = UIBarButtonItem(title: selectAllButttonItemTitle(), style: .plain, target: self, action: #selector(selectAllEntries(_:)))
+    private lazy var selectAllButtonItem = UIBarButtonItem(title: selectAllButtonItemTitle(), style: .plain, target: self, action: #selector(selectAllEntries(_:)))
     
-    private lazy var deselectAllButttonItem = UIBarButtonItem(title: deselectAllButttonItemTitle(), style: .plain, target: self, action: #selector(deselectAllEntries(_:)))
+    private lazy var deselectAllButtonItem = UIBarButtonItem(title: deselectAllButtonItemTitle(), style: .plain, target: self, action: #selector(deselectAllEntries(_:)))
 
     private func updateNavigationItems() {
         if self.multiselection {
             let isAllEntriesSelected = selectedEntries.count == container?.fetchedObjects?.count
-            self.navigationItem.rightBarButtonItem = isAllEntriesSelected ? deselectAllButttonItem : selectAllButttonItem
+            self.navigationItem.rightBarButtonItem = isAllEntriesSelected ? deselectAllButtonItem : selectAllButtonItem
         }
     }
     
