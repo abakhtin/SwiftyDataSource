@@ -18,7 +18,9 @@ public class FilterableDataSourceContainer<T>: ArrayDataSourceContainer<T> where
         guard let searchText = searchText, searchText.count > 0 else { return }
         filteredData = [[T]]()
         arraySections.forEach {
-            filteredData?.append($0.arrayObjects.filter { $0.selectableEntityDescription.string.lowercased().contains(searchText.lowercased()) } )
+            filteredData?.append($0.arrayObjects.filter {
+                $0.selectableEntityDescription.string.lowercased().contains(searchText.lowercased())
+            } )
         }
     }
 
@@ -36,6 +38,23 @@ public class FilterableDataSourceContainer<T>: ArrayDataSourceContainer<T> where
         } else {
             return super.object(at: indexPath)
         }
+    }
+
+    public override func search(_ block: (IndexPath, T) -> Bool) -> IndexPath? {
+        if let filteredData = filteredData {
+            for (sectionIndex, section) in filteredData.enumerated() {
+                for (rowIndex, object) in section.enumerated() {
+                    let indexPath = IndexPath(row: rowIndex, section: sectionIndex)
+                    if block(indexPath, object) {
+                        return indexPath
+                    }
+                }
+            }
+        } else {
+            return super.search(block)
+        }
+
+        return nil
     }
 }
 #endif
