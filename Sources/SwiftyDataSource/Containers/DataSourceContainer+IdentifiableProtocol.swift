@@ -14,7 +14,7 @@ public protocol IdentifiableProtocol: Matchable {
 }
 
 extension IdentifiableProtocol {
-    static func ~= (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+    public static func ~= (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
 }
 
 extension DataSourceContainer where ResultType: IdentifiableProtocol {
