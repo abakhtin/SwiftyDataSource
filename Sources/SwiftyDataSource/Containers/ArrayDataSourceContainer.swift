@@ -125,11 +125,11 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         delegate?.containerDidChangeContent(self)
     }
 
-    public func replace(sectionObjects: [ResultType], at sectionIndex: Int, named name: String = "", indexTitle: String? = nil) throws {
+    public func replace(sectionObjects: [ResultType], at sectionIndex: Int, named name: String = "", indexTitle: String? = nil, sender: Any? = nil) throws {
         guard sectionIndex <= self.arraySections.count else {
             throw ArrayDataSourceContainerError.NonValidIndexPathInsertion
         }
-        let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle)
+        let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle, sender: sender)
 
         delegate?.containerWillChangeContent(self)
         if sectionIndex == self.arraySections.count {
@@ -143,12 +143,12 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
     }
 
     // MARK: Method allows to add objects to new section. If newSectionIndex is nil, add to the end.
-    public func insert(sectionObjects: [ResultType], at newSectionIndex: Int? = nil, named name: String = "", indexTitle: String? = nil) throws {
+    public func insert(sectionObjects: [ResultType], at newSectionIndex: Int? = nil, named name: String = "", indexTitle: String? = nil, sender: Any? = nil) throws {
         if let sectionIndex = newSectionIndex, sectionIndex > self.arraySections.count {
             throw ArrayDataSourceContainerError.NonValidIndexPathInsertion
         }
         let sectionIndex = newSectionIndex ?? self.arraySections.count
-        let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle)
+        let section = Section(objects: sectionObjects, name: name, indexTitle: indexTitle, sender: sender)
         self.arraySections.insert(section, at: sectionIndex)
         
         delegate?.containerWillChangeContent(self)
@@ -204,10 +204,11 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         
         // MARK: Initializing
         
-        init(objects: [ResultType], name: String, indexTitle: String?) {
+        init(objects: [ResultType], name: String, indexTitle: String?, sender: Any?) {
             self.arrayObjects = objects
             self.name = name
             self.indexTitle = indexTitle
+            self.sender = sender
         }
         
         // MARK: Storage
@@ -219,6 +220,8 @@ public class ArrayDataSourceContainer<ResultType>: DataSourceContainer<ResultTyp
         public var name: String
         
         public var indexTitle: String?
+        
+        public var sender: Any?
         
         var numberOfObjects: Int {
             guard let objects = objects else { return 0 }

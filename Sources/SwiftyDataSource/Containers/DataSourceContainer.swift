@@ -10,7 +10,28 @@
 import Foundation
 import CoreData
 
-public typealias DataSourceSectionInfo = NSFetchedResultsSectionInfo
+public protocol DataSourceSectionInfo: NSFetchedResultsSectionInfo {
+    var sender: Any? { get }
+}
+
+private class BaseDataSourceSectionInfo: DataSourceSectionInfo {
+    var sender: Any? = nil
+    var name: String = String()
+    var indexTitle: String? = nil
+    var numberOfObjects: Int = 0
+    var objects: [Any]? = nil
+}
+
+public extension NSFetchedResultsSectionInfo {
+    func asDataSourceSectionInfo() -> DataSourceSectionInfo {
+        let base = BaseDataSourceSectionInfo()
+        base.name = name
+        base.indexTitle = indexTitle
+        base.numberOfObjects = numberOfObjects
+        base.objects = objects
+        return base
+    }
+}
 
 public enum DataSourceObjectChangeType {
     case insert

@@ -11,7 +11,7 @@ import UIKit
 
 // MARK: DataSource for customizing default behaviour of dataSource
 
-public protocol MapViewDataSourceDelegate: class {
+public protocol MapViewDataSourceDelegate: AnyObject {
     associatedtype ObjectType
     func dataSource(_ dataSource: DataSourceProtocol, didSelect object: ObjectType)
 }
