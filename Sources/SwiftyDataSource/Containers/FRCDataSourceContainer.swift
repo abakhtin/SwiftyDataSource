@@ -34,7 +34,7 @@ public class FRCDataSourceContainer<ResultType: NSFetchRequestResult>: DataSourc
 
     open override var sections: [DataSourceSectionInfo]? {
         get {
-            return fetchedResultController.sections
+            return fetchedResultController.sections?.map { $0.asDataSourceSectionInfo() }
         }
     }
     
@@ -129,7 +129,7 @@ class CoreDataDelegateForwarder<ResultType: NSFetchRequestResult>: NSObject, NSF
                     atSectionIndex sectionIndex: Int,
                     for type: NSFetchedResultsChangeType) {
         guard let container = container else { return }
-        delegate?.container(container, didChange: sectionInfo, atSectionIndex: sectionIndex, for: DataSourceObjectChangeType.fromFRCChangeType(type))
+        delegate?.container(container, didChange: sectionInfo.asDataSourceSectionInfo(), atSectionIndex: sectionIndex, for: DataSourceObjectChangeType.fromFRCChangeType(type))
     }
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
