@@ -90,20 +90,88 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         configurableCell.configure(with: object)
         return cell
     }
-    
-    // MARK: NoDataView processing
-    
-    public var noDataView: UIView?
-    
-    open func setNoDataView(hidden: Bool) {
-        guard let _ = noDataView, let _ = collectionView else {
-            return
-        }
-        fatalError("Not implemented")
-    }
 
     public func invertExpanding(at indexPath: IndexPath) {
         fatalError("Not implemented")
+    }
+    
+    open func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard let collectionViewHeight = collectionView?.frame.size.height else { return }
+        if scrollView.contentOffset.y + (1.5 * collectionViewHeight) >= scrollView.contentSize.height {
+            delegate?.dataSourceDidScrollToLastElement(self)
+        }
+    }
+    
+    // MARK: NoDataView & RefreshingView processing
+    
+    public var noDataView: UIView? {
+        didSet {
+            showNoDataViewIfNeeded()
+        }
+    }
+
+    public var refreshingView: UIView? {
+        didSet {
+            showNoDataViewIfNeeded()
+        }
+    }
+
+    public private(set) var isRefreshing: Bool = false
+    
+    public func beginRefreshing() {
+        isRefreshing = true
+        showNoDataViewIfNeeded()
+    }
+    
+    public func endRefreshing() {
+        collectionView?.refreshControl?.endRefreshing()
+        isRefreshing = false
+        showNoDataViewIfNeeded()
+    }
+
+    open func setNoDataView(hidden: Bool) {
+        if hidden {
+            setView(refreshingView, hidden: hidden)
+            setView(noDataView, hidden: hidden)
+        } else {
+            let refreshingOrNoData = isRefreshing ? refreshingView : noDataView
+            let anotherView = (refreshingOrNoData == refreshingView) ? noDataView : refreshingView
+            setView(anotherView, hidden: true)
+            setView(refreshingOrNoData, hidden: false)
+        }
+    }
+    
+    open func setView(_ viewToAdd: UIView?, hidden: Bool) {
+        guard let collectionView = collectionView, let viewToAdd = viewToAdd else { return }
+        
+        // Library allows to handle NoDataView and Refreshing view in two ways
+        // 1. Add viewToAdd in client code to any view and library makes its hidden and visibly automatically
+        if viewToAdd.superview != nil && viewToAdd.superview != collectionView.backgroundView {
+            viewToAdd.isHidden = hidden
+            viewToAdd.superview?.bringSubviewToFront(viewToAdd)
+            return
+        }
+        
+        // 2. If viewToAdd is not added to another view it will be added to background view of collection view
+        // Somewhy we need to create background view to add it. If set view as background view it will be twitched on refresh animation
+        if viewToAdd.superview == nil && hidden == false {
+            viewToAdd.translatesAutoresizingMaskIntoConstraints = false
+            collectionView.backgroundView = UIView(frame: collectionView.bounds)
+            collectionView.backgroundView?.addSubview(viewToAdd)
+            
+            if let superview = viewToAdd.superview {
+                viewToAdd.leftAnchor.constraint(equalTo: superview.leftAnchor).isActive = true
+                viewToAdd.rightAnchor.constraint(equalTo: superview.rightAnchor).isActive = true
+                viewToAdd.topAnchor.constraint(equalTo: superview.topAnchor).isActive = true
+                viewToAdd.bottomAnchor.constraint(equalTo: superview.bottomAnchor).isActive = true
+            }
+        } else if viewToAdd.superview != nil && hidden == true {
+            if viewToAdd == collectionView.backgroundView {
+                collectionView.backgroundView = nil
+            } else {
+                viewToAdd.removeFromSuperview()
+            }
+        }
     }
     
     // MARK: Selection
