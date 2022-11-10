@@ -122,7 +122,6 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         isRefreshing = true
         showNoDataViewIfNeeded()
     }
-
     
     public func endRefreshing() {
         collectionView?.refreshControl?.endRefreshing()
