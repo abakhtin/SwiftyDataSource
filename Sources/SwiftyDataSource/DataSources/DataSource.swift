@@ -23,7 +23,9 @@ public protocol DataSource: DataSourceProtocol {
     var hasData: Bool { get }
     var numberOfSections: Int? { get }
     var noDataView: UIView? { get set }
-
+    var refreshingView: UIView? { get set }
+    var isRefreshing: Bool { get set }
+    
     func numberOfItems(in section: Int) -> Int?
     func object(at indexPath: IndexPath) -> ObjectType?
     func showNoDataViewIfNeeded()
@@ -33,7 +35,7 @@ public protocol DataSource: DataSourceProtocol {
 }
 
 extension DataSource {
-
+    
     public var hasData: Bool {
         guard let container = container else { return false }
         return container.hasData
@@ -54,10 +56,60 @@ extension DataSource {
     public func sectionInfo(at index: Int) -> DataSourceSectionInfo? {
         return container?.sections?[index]
     }
-
+    
+    public mutating func beginRefreshing() {
+        isRefreshing = true
+        showNoDataViewIfNeeded()
+    }
+    
     public func showNoDataViewIfNeeded() {
         setNoDataView(hidden: hasData)
     }
-
+    
+    public func setNoDataView(hidden: Bool, hasBackgroundView: HasBackgroundView?) {
+        if hidden {
+            setView(refreshingView, hasBackgroundView: hasBackgroundView, hidden: hidden)
+            setView(noDataView, hasBackgroundView: hasBackgroundView, hidden: hidden)
+        } else {
+            let refreshingOrNoData = isRefreshing ? refreshingView : noDataView
+            let anotherView = (refreshingOrNoData == refreshingView) ? noDataView : refreshingView
+            setView(anotherView, hasBackgroundView: hasBackgroundView, hidden: true)
+            setView(refreshingOrNoData, hasBackgroundView: hasBackgroundView, hidden: false)
+        }
+    }
+    
+    public func setView(_ viewToAdd: UIView?, hasBackgroundView: HasBackgroundView?, hidden: Bool) {
+        guard let hasBackgroundView = hasBackgroundView, let viewToAdd = viewToAdd else { return }
+        
+        // Library allows to handle NoDataView and Refreshing view in two ways
+        // 1. Add viewToAdd in client code to any view and library makes its hidden and visibly automatically
+        if viewToAdd.superview != nil && viewToAdd.superview != hasBackgroundView.backgroundView {
+            viewToAdd.isHidden = hidden
+            viewToAdd.superview?.bringSubviewToFront(viewToAdd)
+            return
+        }
+        
+        // 2. If viewToAdd is not added to another view it will be added to background view of collection view
+        // Somewhy we need to create background view to add it. If set view as background view it will be twitched on refresh animation
+        if viewToAdd.superview == nil && hidden == false {
+            viewToAdd.translatesAutoresizingMaskIntoConstraints = false
+            hasBackgroundView.backgroundView = UIView(frame: hasBackgroundView.bounds)
+            hasBackgroundView.backgroundView?.addSubview(viewToAdd)
+            
+            if let superview = viewToAdd.superview {
+                viewToAdd.leftAnchor.constraint(equalTo: superview.leftAnchor).isActive = true
+                viewToAdd.rightAnchor.constraint(equalTo: superview.rightAnchor).isActive = true
+                viewToAdd.topAnchor.constraint(equalTo: superview.topAnchor).isActive = true
+                viewToAdd.bottomAnchor.constraint(equalTo: superview.bottomAnchor).isActive = true
+            }
+        } else if viewToAdd.superview != nil && hidden == true {
+            if viewToAdd == hasBackgroundView.backgroundView {
+                hasBackgroundView.backgroundView = nil
+            } else {
+                viewToAdd.removeFromSuperview()
+            }
+        }
+    }
+    
 }
 #endif
