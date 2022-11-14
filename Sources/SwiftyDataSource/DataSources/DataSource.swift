@@ -66,24 +66,24 @@ extension DataSource {
         setNoDataView(hidden: hasData)
     }
     
-    public func setNoDataView(hidden: Bool, hasBackgroundView: HasBackgroundView?) {
+    public func setNoDataView(hidden: Bool, containerView: HasBackgroundView?) {
         if hidden {
-            setView(refreshingView, hasBackgroundView: hasBackgroundView, hidden: hidden)
-            setView(noDataView, hasBackgroundView: hasBackgroundView, hidden: hidden)
+            setView(refreshingView, containerView: containerView, hidden: hidden)
+            setView(noDataView, containerView: containerView, hidden: hidden)
         } else {
             let refreshingOrNoData = isRefreshing ? refreshingView : noDataView
             let anotherView = (refreshingOrNoData == refreshingView) ? noDataView : refreshingView
-            setView(anotherView, hasBackgroundView: hasBackgroundView, hidden: true)
-            setView(refreshingOrNoData, hasBackgroundView: hasBackgroundView, hidden: false)
+            setView(anotherView, containerView: containerView, hidden: true)
+            setView(refreshingOrNoData, containerView: containerView, hidden: false)
         }
     }
     
-    public func setView(_ viewToAdd: UIView?, hasBackgroundView: HasBackgroundView?, hidden: Bool) {
-        guard let hasBackgroundView = hasBackgroundView, let viewToAdd = viewToAdd else { return }
+    public func setView(_ viewToAdd: UIView?, containerView: HasBackgroundView?, hidden: Bool) {
+        guard let containerView = containerView, let viewToAdd = viewToAdd else { return }
         
         // Library allows to handle NoDataView and Refreshing view in two ways
         // 1. Add viewToAdd in client code to any view and library makes its hidden and visibly automatically
-        if viewToAdd.superview != nil && viewToAdd.superview != hasBackgroundView.backgroundView {
+        if viewToAdd.superview != nil && viewToAdd.superview != containerView.backgroundView {
             viewToAdd.isHidden = hidden
             viewToAdd.superview?.bringSubviewToFront(viewToAdd)
             return
@@ -93,8 +93,8 @@ extension DataSource {
         // Somewhy we need to create background view to add it. If set view as background view it will be twitched on refresh animation
         if viewToAdd.superview == nil && hidden == false {
             viewToAdd.translatesAutoresizingMaskIntoConstraints = false
-            hasBackgroundView.backgroundView = UIView(frame: hasBackgroundView.bounds)
-            hasBackgroundView.backgroundView?.addSubview(viewToAdd)
+            containerView.backgroundView = UIView(frame: containerView.bounds)
+            containerView.backgroundView?.addSubview(viewToAdd)
             
             if let superview = viewToAdd.superview {
                 viewToAdd.leftAnchor.constraint(equalTo: superview.leftAnchor).isActive = true
@@ -103,8 +103,8 @@ extension DataSource {
                 viewToAdd.bottomAnchor.constraint(equalTo: superview.bottomAnchor).isActive = true
             }
         } else if viewToAdd.superview != nil && hidden == true {
-            if viewToAdd == hasBackgroundView.backgroundView {
-                hasBackgroundView.backgroundView = nil
+            if viewToAdd == containerView.backgroundView {
+                containerView.backgroundView = nil
             } else {
                 viewToAdd.removeFromSuperview()
             }

@@ -126,7 +126,7 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     }
     
     open func setNoDataView(hidden: Bool) {
-        setNoDataView(hidden: hidden, hasBackgroundView: tableView)
+        setNoDataView(hidden: hidden, containerView: tableView)
     }
     
     // MARK: Expanding

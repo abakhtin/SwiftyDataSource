@@ -125,7 +125,7 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
     }
     
     open func setNoDataView(hidden: Bool) {
-        setNoDataView(hidden: hidden, hasBackgroundView: collectionView)
+        setNoDataView(hidden: hidden, containerView: collectionView)
     }
     
     // MARK: Selection
