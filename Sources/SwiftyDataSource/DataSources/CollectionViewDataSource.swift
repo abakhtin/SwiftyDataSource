@@ -116,7 +116,12 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         }
     }
     
-    public var isRefreshing: Bool = false
+    public private(set) var isRefreshing: Bool = false
+    
+    public func beginRefreshing() {
+        isRefreshing = true
+        showNoDataViewIfNeeded()
+    }
     
     public func endRefreshing() {
         collectionView?.refreshControl?.endRefreshing()
@@ -125,7 +130,7 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
     }
     
     open func setNoDataView(hidden: Bool) {
-        setNoDataView(hidden: hidden, containerView: collectionView)
+        setNoDataView(hidden: hidden, isRefreshing: isRefreshing, containerView: collectionView)
     }
     
     // MARK: Selection

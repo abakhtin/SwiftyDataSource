@@ -117,7 +117,12 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
         }
     }
     
-    public var isRefreshing: Bool = false
+    public private(set) var isRefreshing: Bool = false
+    
+    public func beginRefreshing() {
+        isRefreshing = true
+        showNoDataViewIfNeeded()
+    }
     
     public func endRefreshing() {
         tableView?.refreshControl?.endRefreshing()
@@ -126,7 +131,7 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     }
     
     open func setNoDataView(hidden: Bool) {
-        setNoDataView(hidden: hidden, containerView: tableView)
+        setNoDataView(hidden: hidden, isRefreshing: isRefreshing, containerView: tableView)
     }
     
     // MARK: Expanding

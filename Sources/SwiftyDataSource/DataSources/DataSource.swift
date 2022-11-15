@@ -24,7 +24,6 @@ public protocol DataSource: DataSourceProtocol {
     var numberOfSections: Int? { get }
     var noDataView: UIView? { get set }
     var refreshingView: UIView? { get set }
-    var isRefreshing: Bool { get set }
     
     func numberOfItems(in section: Int) -> Int?
     func object(at indexPath: IndexPath) -> ObjectType?
@@ -57,16 +56,11 @@ extension DataSource {
         return container?.sections?[index]
     }
     
-    public mutating func beginRefreshing() {
-        isRefreshing = true
-        showNoDataViewIfNeeded()
-    }
-    
     public func showNoDataViewIfNeeded() {
         setNoDataView(hidden: hasData)
     }
     
-    public func setNoDataView(hidden: Bool, containerView: HasBackgroundView?) {
+    public func setNoDataView(hidden: Bool, isRefreshing: Bool, containerView: HasBackgroundView?) {
         if hidden {
             setView(refreshingView, containerView: containerView, hidden: hidden)
             setView(noDataView, containerView: containerView, hidden: hidden)
