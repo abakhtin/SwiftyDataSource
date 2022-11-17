@@ -54,6 +54,7 @@
 		BCFA3BA823A8186700BA19BC /* CollectionViewDataSourceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFA3BA723A8186700BA19BC /* CollectionViewDataSourceDelegate.swift */; };
 		BCFA3BAA23A82B6300BA19BC /* NoDataView+Text.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFA3BA923A82B6300BA19BC /* NoDataView+Text.swift */; };
 		D1EE606F23D063A1008540C3 /* LeftAlignmentFlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1EE606E23D063A1008540C3 /* LeftAlignmentFlowLayout.swift */; };
+		FA91B560292250B90007E7E8 /* HasBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA91B55F292250B90007E7E8 /* HasBackgroundView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,6 +118,7 @@
 		BCFA3BA723A8186700BA19BC /* CollectionViewDataSourceDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionViewDataSourceDelegate.swift; sourceTree = "<group>"; };
 		BCFA3BA923A82B6300BA19BC /* NoDataView+Text.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NoDataView+Text.swift"; sourceTree = "<group>"; };
 		D1EE606E23D063A1008540C3 /* LeftAlignmentFlowLayout.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LeftAlignmentFlowLayout.swift; sourceTree = "<group>"; };
+		FA91B55F292250B90007E7E8 /* HasBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HasBackgroundView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -215,6 +217,7 @@
 				B84F3C8821CAFE1600489349 /* DataSourceViews.swift */,
 				B84F3C8921CAFE1600489349 /* TableViewDataSourceDelegate.swift */,
 				B84F3C8A21CAFE1600489349 /* DataSource.swift */,
+				FA91B55F292250B90007E7E8 /* HasBackgroundView.swift */,
 			);
 			path = DataSources;
 			sourceTree = "<group>";
@@ -426,6 +429,7 @@
 				B8F4AC262267869100F85471 /* UIStackView+RemoveAllSubviews.swift in Sources */,
 				B8F4AC2A2267869100F85471 /* NSFetchRequest+Sorting.swift in Sources */,
 				B8F4AC202267869100F85471 /* UIImage+String.swift in Sources */,
+				FA91B560292250B90007E7E8 /* HasBackgroundView.swift in Sources */,
 				B8F4AC2C2267869100F85471 /* UserDefaults+Subscript.swift in Sources */,
 				B8A9FE7622E5D421000E3DDC /* String+digitsOnly.swift in Sources */,
 				B84F3C8B21CAFE1600489349 /* FRCDataSourceContainer.swift in Sources */,
