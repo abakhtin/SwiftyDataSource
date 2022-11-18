@@ -191,7 +191,7 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     // Variable height support
     open func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { return UITableView.automaticDimension }
     open func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        if removeEmptyHeaders, let sectionInfo = sectionInfo(at: section), sectionInfo.name.isEmpty, sectionInfo.sender == nil {
+        if removeEmptyHeaders, let sectionInfo = sectionInfo(at: section), sectionInfo.name.isEmpty, sectionInfo.sender == nil, container?.hasData == false {
             return 0.0
         } else if let headerHeight = headerHeight {
             return headerHeight
