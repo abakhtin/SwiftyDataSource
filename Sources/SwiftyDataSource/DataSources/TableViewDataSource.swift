@@ -192,7 +192,9 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     open func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { return UITableView.automaticDimension }
     open func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         if removeEmptyHeaders, let sectionInfo = sectionInfo(at: section), sectionInfo.name.isEmpty, sectionInfo.sender == nil {
-            return 0.0
+            return .zero
+        } else if container?.hasData == false {
+            return .zero
         } else if let headerHeight = headerHeight {
             return headerHeight
         } else {
