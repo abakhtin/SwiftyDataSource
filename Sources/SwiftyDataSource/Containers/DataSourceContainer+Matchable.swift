@@ -13,8 +13,37 @@ public protocol Matchable {
 }
 
 extension ArrayDataSourceContainer where ResultType: Matchable {
+    public func indexPathMatchableObject(_ sameObject: ResultType) -> IndexPath? {
+        return search({ $1 ~= sameObject })
+    }
+    
+    public func sectionIndexOfMatchableObject(_ object: ResultType) -> Int? {
+        guard let existedObjectIndexPath = indexPathMatchableObject(object) else { return nil }
+        return existedObjectIndexPath.section
+    }
+    
     public func replaceMatchableObject(with newObject: ResultType) throws {
-        guard let existedObjectIndexPath = search({ $1 ~= newObject }) else { return }
+        guard let existedObjectIndexPath = indexPathMatchableObject(newObject) else { return }
         try replace(object: newObject, at: existedObjectIndexPath)
+    }
+    
+    public func insertMatchableObject(_ object: ResultType, atObjectIndexPath existingObject: ResultType) throws {
+        guard let existedObjectIndexPath = indexPathMatchableObject(existingObject) else { return }
+        try insert(object: object, at: existedObjectIndexPath)
+    }
+    
+    public func insertMatchableObjectsToEndOfSection(_ objects: [ResultType], someObjectInThisSection: ResultType) throws {
+        guard let existedObjectSectionIndex = sectionIndexOfMatchableObject(someObjectInThisSection) else { return }
+        try insert(objects: objects, toSectionAt: existedObjectSectionIndex)
+    }
+    
+    public func deleteMatchableObject(_ sameObject: ResultType) throws {
+        guard let existedObjectIndexPath = indexPathMatchableObject(sameObject) else { return }
+        try remove(at: existedObjectIndexPath)
+    }
+    
+    public func findMatchableObject(_ sameObject: ResultType) -> ResultType? {
+        guard let existedObjectIndexPath = indexPathMatchableObject(sameObject) else { return nil }
+        return object(at: existedObjectIndexPath)
     }
 }
