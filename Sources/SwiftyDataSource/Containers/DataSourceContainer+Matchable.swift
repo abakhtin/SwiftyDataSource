@@ -22,8 +22,8 @@ extension ArrayDataSourceContainer where ResultType: Matchable {
         return existedObjectIndexPath.section
     }
     
-    public func replaceMatchableObject(with newObject: ResultType) throws {
-        guard let existedObjectIndexPath = indexPathMatchableObject(newObject) else { return }
+    public func replaceMatchableObject(_ existingObject: ResultType? = nil, with newObject: ResultType) throws {
+        guard let existedObjectIndexPath = indexPathMatchableObject(existingObject ?? newObject) else { return }
         try replace(object: newObject, at: existedObjectIndexPath)
     }
     
