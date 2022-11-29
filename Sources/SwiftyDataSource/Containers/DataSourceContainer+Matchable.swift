@@ -46,4 +46,10 @@ extension ArrayDataSourceContainer where ResultType: Matchable {
         guard let existedObjectIndexPath = indexPathMatchableObject(sameObject) else { return nil }
         return object(at: existedObjectIndexPath)
     }
+    
+    public func findMatchableObjects(_ sameObjects: ResultType..., completion: ((ResultType, IndexPath) -> Void)?) {
+        enumerate { indexPath, result in
+            if sameObjects.contains(where: { $0 ~= result }) { completion?(result, indexPath) }
+        }
+    }
 }
