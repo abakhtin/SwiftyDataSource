@@ -22,9 +22,9 @@ extension ArrayDataSourceContainer where ResultType: Matchable {
         return existedObjectIndexPath.section
     }
     
-    public func replaceMatchableObject(_ existingObject: ResultType? = nil, with newObject: ResultType) throws {
+    public func replaceMatchableObject(_ existingObject: ResultType? = nil, with newObject: ResultType, replaceAfterReuse: Bool = false) throws {
         guard let existedObjectIndexPath = indexPathMatchableObject(existingObject ?? newObject) else { return }
-        try replace(object: newObject, at: existedObjectIndexPath)
+        try replace(object: newObject, at: existedObjectIndexPath, replaceAfterReuse: replaceAfterReuse)
     }
     
     public func insertMatchableObject(_ object: ResultType, atObjectIndexPath existingObject: ResultType) throws {
