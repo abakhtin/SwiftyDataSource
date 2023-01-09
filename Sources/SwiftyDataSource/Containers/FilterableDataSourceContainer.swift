@@ -56,5 +56,13 @@ public class FilterableDataSourceContainer<T>: ArrayDataSourceContainer<T> where
 
         return nil
     }
+    
+    public override var hasData: Bool {
+        if let filteredData = filteredData {
+            return filteredData.first(where: { !$0.isEmpty }) != nil
+        } else {
+            return super.hasData
+        }
+    }
 }
 #endif
