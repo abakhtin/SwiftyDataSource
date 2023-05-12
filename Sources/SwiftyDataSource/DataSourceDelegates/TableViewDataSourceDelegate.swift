@@ -9,6 +9,11 @@
 #if os(iOS)
 import UIKit
 
+public protocol CellTextFieldDelegate {
+    associatedtype T
+    func textFieldDidChanged(_ sender: UITextField, model: T)
+}
+
 // MARK: DataSource for customizing default behaviour of dataSource
 
 public protocol TableViewDataSourceDelegate: AnyObject {

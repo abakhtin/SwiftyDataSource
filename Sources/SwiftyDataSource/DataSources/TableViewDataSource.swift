@@ -16,7 +16,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     public init(tableView: UITableView? = nil,
                 cellIdentifier: String? = nil,
                 container: DataSourceContainer<ObjectType>? = nil,
-                delegate: AnyTableViewDataSourceDelegate<ObjectType>?) {
+                delegate: AnyTableViewDataSourceDelegate<ObjectType>?,
+                textFieldDelegate: (any CellTextFieldDelegate<ObjectType>)? = nil) {
         self.container = container
         self.delegate = delegate
         self.tableView = tableView
@@ -55,6 +56,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     public var footerHeight: CGFloat = 0.0
 
     public var delegate: AnyTableViewDataSourceDelegate<ObjectType>?
+
+    public var textFieldDelegate: CellTextFieldDelegate<ObjectType>?
 
     // MARK: Implementing of datasource methods
     
@@ -98,6 +101,13 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
         if var expandable = cell as? DataSourceExpandable {
             expandable.setExpanded(value: expandedCells.firstIndex(of: indexPath) != nil)
             cell.setNeedsUpdateConstraints()
+        }
+
+        if let cell = cell as? UITextFieldDelegate {
+            guard let cell = cell as? CellTextFieldDelegateHolder {
+                fatalError("Cell implements UITextFieldDelegate but is not implementing CellTextFieldDelegateHolder protocol")
+            }
+            cell.textFieldDelegate = textFieldDelegate
         }
 
         return cell
