@@ -9,7 +9,6 @@
 import Foundation
 
 public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContainer<ObjectType> {
-    
     private var _sections: [Section<ObjectType>] = []
     private var sectionsSet: Set<Section<ObjectType>> { Set(_sections) }
     
@@ -20,7 +19,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         super.init()
         if !sections.isEmpty { appendSections(sections) }
     }
-
+    
     public override func object(at indexPath: IndexPath) -> ObjectType? {
         _sections[safe: indexPath.section]?._objects[safe: indexPath.row]
     }
@@ -46,7 +45,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
         return nil
     }
-
+    
     public override func enumerate(_ block: (IndexPath, ObjectType) -> Void) {
         _sections.enumerated().forEach { sectionIndex, section in
             section._objects.enumerated().forEach { objectIndex, object in
@@ -58,249 +57,310 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public override func numberOfSections() -> Int? { _sections.count }
     
     public override func numberOfItems(in section: Int) -> Int? { _sections[safe: section]?.numberOfObjects }
-
+    
     public func objects(atSection sectionIndex: Int) -> [ObjectType] {
         _sections[safe: sectionIndex]?._objects ?? []
     }
-
+    
     public func section(containingObject object: ObjectType) -> Section<ObjectType>? {
         _sections.first { $0.contains(object: object) }
     }
-
+    
     public func indexOfObject(_ object: ObjectType) -> Int? {
         indexPath(for: object)?.row
     }
-
+    
+    public func indexOfSection(_ section: Section<ObjectType>) -> Int? {
+        _sections.firstIndex(of: section)
+    }
+    
     public func appendObjects(_ objects: [ObjectType], to section: Section<ObjectType>?) {
-        if let section {
-            let objectsToAppend = getOnlyNewObjects(objects)
+        if let section, let sectionIndex = indexOfSection(section) {
+            let objectsToAppend = getOnlyNewObjects(objects.uniqued())
             if !objectsToAppend.isEmpty {
+                let objectsCountInSectionBeforeAppending = section.numberOfObjects
                 section.append(objectsToAppend)
-                delegate?.containerWillChangeContent(self)
-                objectsToAppend.compactMap { ($0, indexPath(for: $0)) }.forEach { object, indexPath in
-                    delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: indexPath)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    objectsToAppend.enumerated().forEach { index, object in
+                        self.delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: IndexPath(row: objectsCountInSectionBeforeAppending == .zero ? index : objectsCountInSectionBeforeAppending + index, section: sectionIndex))
+                    }
                 }
-                delegate?.containerDidChangeContent(self)
             }
         }
     }
-
+    
     public func insertObjects(_ objects: [ObjectType], beforeObject: ObjectType) {
-        if let section = section(containingObject: beforeObject) {
-            let objectsToInsert = getOnlyNewObjects(objects)
+        if let section = section(containingObject: beforeObject), let sectionIndex = indexOfSection(section), let beforeObjectIndex = section.indexOfObject(beforeObject) {
+            let objectsToInsert = getOnlyNewObjects(objects.uniqued())
             if !objectsToInsert.isEmpty {
-                section.insertObjects(objects, beforeObject: beforeObject)
-                delegate?.containerWillChangeContent(self)
-                objectsToInsert.compactMap { ($0, indexPath(for: $0)) }.forEach { object, indexPath in
-                    delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: indexPath)
+                section.insertObjects(objectsToInsert, beforeObject: beforeObject)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    objectsToInsert.enumerated().forEach { index, object in
+                        self.delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: IndexPath(row: beforeObjectIndex + index, section: sectionIndex))
+                    }
                 }
-                delegate?.containerDidChangeContent(self)
             }
         }
     }
-
+    
     public func insertObjects(_ objects: [ObjectType], afterObject: ObjectType) {
-        if let section = section(containingObject: afterObject) {
-            let objectsToInsert = getOnlyNewObjects(objects)
+        if let section = section(containingObject: afterObject), let sectionIndex = indexOfSection(section), let afterObjectIndex = section.indexOfObject(afterObject) {
+            let objectsToInsert = getOnlyNewObjects(objects.uniqued())
             if !objectsToInsert.isEmpty {
-                section.insertObjects(objects, afterObject: afterObject)
-                delegate?.containerWillChangeContent(self)
-                objectsToInsert.compactMap { ($0, indexPath(for: $0)) }.forEach { object, indexPath in
-                    delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: indexPath)
+                section.insertObjects(objectsToInsert, afterObject: afterObject)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    objectsToInsert.enumerated().forEach { index, object in
+                        self.delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: IndexPath(row: afterObjectIndex + index + 1, section: sectionIndex))
+                    }
                 }
-                delegate?.containerDidChangeContent(self)
             }
         }
     }
-
-    public func deleteObject(_ objects: [ObjectType]) {
-        let objectsToDelete = objects.map { ($0, section(containingObject: $0)) }.filter { $0.1 != nil }
-        if !objectsToDelete.isEmpty {
-            delegate?.containerWillChangeContent(self)
-            objectsToDelete.forEach { object, section in
-                let indexPath = indexPath(for: object)
-                section?.deleteObjects([object])
-                delegate?.container(self, didChange: object, at: indexPath, for: .delete, newIndexPath: nil)
+    
+    public func deleteObjects(_ objects: [ObjectType]) {
+        var objectsToDeleteDictionary: [Section<ObjectType>: [ObjectType]] = [:]
+        objects.uniqued().forEach { object in
+            if let section = section(containingObject: object) {
+                objectsToDeleteDictionary[section, default: []].append(object)
             }
-            delegate?.containerWillChangeContent(self)
+        }
+        var indexesOfDeletedObjects: [Int: [(ObjectType, Int)]] = [:]
+        var sectionsForDelete: [Int: Section<ObjectType>] = [:]
+        objectsToDeleteDictionary.forEach { section, objects in
+            if let sectionIndex = indexOfSection(section) {
+                let objectsAndIndexes = objects.compactMap { object -> (ObjectType, Int)? in
+                    guard let objectIndex = section.indexOfObject(object) else { return nil }
+                    return (object, objectIndex)
+                }
+                section.deleteObjects(objectsAndIndexes.map { $0.0 })
+                indexesOfDeletedObjects[sectionIndex] = objectsAndIndexes
+                if section.numberOfObjects == .zero {
+                    sectionsForDelete[sectionIndex] = section
+                }
+            }
+        }
+        _sections.removeAll() { sectionsForDelete.values.contains($0) }
+        performDelegateUpdate { [weak self] in
+            guard let self else { return }
+            indexesOfDeletedObjects.sorted { $0.key > $1.key }.forEach { sectionIndex, pairs in
+                pairs.sorted { $0.1 > $1.1 }.forEach { pair in
+                    self.delegate?.container(self, didChange: pair.0, at: IndexPath(row: pair.1, section: sectionIndex), for: .delete, newIndexPath: nil)
+                }
+            }
+            sectionsForDelete.sorted { $0.key > $1.key }.forEach { sectionIndex, section in
+                self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+            }
         }
     }
-
+    
     public func deleteAllObjects() {
-        if !_sections.isEmpty {
-            let sections = _sections
+        let sections = _sections
+        if !sections.isEmpty {
             _sections = []
-            delegate?.containerWillChangeContent(self)
-            sections.enumerated().forEach { index, section in
-                delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                sections.enumerated().forEach { index, section in
+                    self.delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+                }
             }
-            delegate?.containerDidChangeContent(self)
         }
     }
-
+    
     public func moveObject(_ object: ObjectType, beforeObject: ObjectType) {
-        if let sectionOfObject = section(containingObject: object), let sectionOfBeforeItem = section(containingObject: beforeObject) {
-            let oldIndexPath = indexPath(for: object)
-            let newIndexPath = indexPath(for: beforeObject)
+        if let sectionOfObject = section(containingObject: object), let sectionIndex = indexOfSection(sectionOfObject), let indexOfObject = sectionOfObject.indexOfObject(object), let sectionOfBeforeObject = section(containingObject: beforeObject), let sectionIndexOfBeforeObject = indexOfSection(sectionOfBeforeObject), let indexOfBeforeObject = sectionOfObject.indexOfObject(beforeObject) {
+            let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
+            let newIndexPath = IndexPath(row: indexOfBeforeObject, section: sectionIndexOfBeforeObject)
             if oldIndexPath != newIndexPath {
-                if sectionOfObject == sectionOfBeforeItem {
+                if sectionOfObject == sectionOfBeforeObject {
                     sectionOfObject.moveObject(object, beforeObject: beforeObject)
                 } else {
                     sectionOfObject.deleteObjects([object])
-                    sectionOfBeforeItem.insertObjects([object], beforeObject: beforeObject)
+                    sectionOfBeforeObject.insertObjects([object], beforeObject: beforeObject)
                 }
-                delegate?.containerWillChangeContent(self)
-                delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
-                delegate?.containerWillChangeContent(self)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
+                }
             }
         }
     }
-
+    
     public func moveObject(_ object: ObjectType, afterObject: ObjectType) {
-        if let sectionOfObject = section(containingObject: object), let sectionOfAfterItem = section(containingObject: afterObject) {
-            let oldIndexPath = indexPath(for: object)
-            let newIndexPath = indexPath(for: afterObject).map { IndexPath(row: $0.row + 1, section: $0.section) }
+        if let sectionOfObject = section(containingObject: object), let sectionIndex = indexOfSection(sectionOfObject), let indexOfObject = sectionOfObject.indexOfObject(object), let sectionOfAfterObject = section(containingObject: afterObject), let sectionIndexOfAfterObject = indexOfSection(sectionOfAfterObject), let indexOfAfterItem = sectionOfObject.indexOfObject(afterObject) {
+            let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
+            let newIndexPath = IndexPath(row: indexOfAfterItem + 1, section: sectionIndexOfAfterObject)
             if oldIndexPath != newIndexPath {
-                if sectionOfObject == sectionOfAfterItem {
+                if sectionOfObject == sectionOfAfterObject {
                     sectionOfObject.moveObject(object, afterObject: afterObject)
                 } else {
                     sectionOfObject.deleteObjects([object])
-                    sectionOfAfterItem.insertObjects([object], afterObject: afterObject)
+                    sectionOfAfterObject.insertObjects([object], afterObject: afterObject)
                     
                 }
-                delegate?.containerWillChangeContent(self)
-                delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
-                delegate?.containerDidChangeContent(self)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
+                }
             }
         }
         
     }
-
+    
     public func reloadObjects(_ objects: [ObjectType]) {
         let existingObjects = Set(objects).intersection(Set(fetchedObjects ?? []))
         if !existingObjects.isEmpty {
-            delegate?.containerWillChangeContent(self)
-            existingObjects.forEach { object in
-                delegate?.container(self, didChange: object, at: indexPath(for: object), for: .reload, newIndexPath: nil)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                existingObjects.forEach { object in
+                    self.delegate?.container(self, didChange: object, at: self.indexPath(for: object), for: .reload, newIndexPath: nil)
+                }
             }
-            delegate?.containerDidChangeContent(self)
         }
     }
-
+    
     public func reconfigureObjects(_ objects: [ObjectType]) {
         let existingObjects = Set(objects).intersection(Set(fetchedObjects ?? []))
         if !existingObjects.isEmpty {
-            delegate?.containerWillChangeContent(self)
-            existingObjects.forEach { object in
-                delegate?.container(self, didChange: object, at: indexPath(for: object), for: .update, newIndexPath: nil)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                existingObjects.forEach { object in
+                    self.delegate?.container(self, didChange: object, at: self.indexPath(for: object), for: .update, newIndexPath: nil)
+                }
             }
-            delegate?.containerDidChangeContent(self)
         }
     }
-
+    
     public func appendSections(_ sections: [SectionRepresentable<ObjectType>]) {
         let sectionsWithNewObjects = getSectionsWithNewObjects(from: sections)
         if !sectionsWithNewObjects.isEmpty {
             _sections.append(contentsOf: sectionsWithNewObjects)
-            delegate?.containerWillChangeContent(self)
-            _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
-                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
+                    self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                }
             }
-            delegate?.containerDidChangeContent(self)
         }
     }
-
+    
     public func insertSections(_ sections: [SectionRepresentable<ObjectType>], beforeSection: Section<ObjectType>) {
         let sectionsWithNewObjects = getSectionsWithNewObjects(from: sections)
         if !sectionsWithNewObjects.isEmpty {
             if let beforeSectionIndex = _sections.firstIndex(of: beforeSection) {
                 _sections.insert(contentsOf: sectionsWithNewObjects, at: beforeSectionIndex)
-                delegate?.containerWillChangeContent(self)
-                _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
-                    delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
+                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                    }
                 }
-                delegate?.containerDidChangeContent(self)
             }
         }
     }
-
+    
     public func insertSections(_ sections: [SectionRepresentable<ObjectType>], afterSection: Section<ObjectType>) {
         let sectionsWithNewObjects = getSectionsWithNewObjects(from: sections)
         if !sectionsWithNewObjects.isEmpty {
             if let afterSectionIndex = _sections.firstIndex(of: afterSection) {
                 _sections.insert(contentsOf: sectionsWithNewObjects, at: afterSectionIndex + 1)
-                delegate?.containerWillChangeContent(self)
-                _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
-                    delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                performDelegateUpdate { [weak self] in
+                    guard let self else { return }
+                    _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
+                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                    }
                 }
-                delegate?.containerDidChangeContent(self)
             }
         }
     }
-
+    
     public func deleteSections(_ sections: [Section<ObjectType>]) {
         let existingSections = Set(sections).intersection(sectionsSet)
         if !existingSections.isEmpty {
-            delegate?.containerWillChangeContent(self)
-            sections.forEach { section in
-                let sectionIndex = _sections.firstIndex(of: section)
-                _sections.removeAll { $0 == section }
-                if let sectionIndex {
-                    delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+            let sectionsForRemove = existingSections.reduce(into: [Int: Section<ObjectType>]()) { result, section in
+                if let sectionIndex = indexOfSection(section) {
+                    result[sectionIndex] = section
                 }
             }
-            delegate?.containerDidChangeContent(self)
+            _sections.removeAll { Set(sectionsForRemove.values).contains($0) }
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                sectionsForRemove.forEach { index, section in
+                    self.delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+                }
+            }
         }
     }
-
+    
     public func moveSection(_ section: Section<ObjectType>, beforeSection: Section<ObjectType>) {
         if let sectionIndex = _sections.firstIndex(of: section), let beforeSectionIndex = _sections.firstIndex(of: beforeSection) {
             _sections.remove(at: sectionIndex)
             _sections.insert(section, at: beforeSectionIndex)
             
-            delegate?.containerWillChangeContent(self)
-            delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .move)
-            delegate?.containerDidChangeContent(self)
-        
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .move)
+            }
         }
     }
-
+    
     public func moveSection(_ section: Section<ObjectType>, afterSection: Section<ObjectType>) {
         if let sectionIndex = _sections.firstIndex(of: section), let afterSectionIndex = _sections.firstIndex(of: afterSection) {
             _sections.remove(at: sectionIndex)
-            _sections.insert(section, at: afterSectionIndex + 1)
+            if afterSectionIndex < _sections.count - 1 {
+                _sections.insert(section, at: afterSectionIndex + 1)
+            } else {
+                _sections.append(section)
+            }
             
-            delegate?.containerWillChangeContent(self)
-            delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .move)
-            delegate?.containerDidChangeContent(self)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .move)
+            }
         }
     }
-
+    
     public func reloadSections(_ sections: [Section<ObjectType>]) {
         let existingSections = Set(sections).intersection(sectionsSet)
         if !existingSections.isEmpty {
-            delegate?.containerWillChangeContent(self)
-            sections.forEach { section in
-                if let sectionIndex = _sections.firstIndex(of: section) {
-                    delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .reload)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                sections.forEach { section in
+                    if let sectionIndex = self.indexOfSection(section) {
+                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .reload)
+                    }
                 }
             }
-            delegate?.containerDidChangeContent(self)
         }
     }
     
     private func getOnlyNewObjects(_ objects: [ObjectType]) -> [ObjectType] {
+        let objects = objects.uniqued()
         let newObjects = Set(objects).subtracting(Set(fetchedObjects ?? []))
         return objects.filter { newObjects.contains($0) }
     }
     
     private func getSectionsWithNewObjects(from sections: [SectionRepresentable<ObjectType>]) -> [Section<ObjectType>] {
-        sections.reduce(into: [Section<ObjectType>]()) { result, nextValue in
+        var tempSet = Set<ObjectType>()
+        return sections.reduce(into: [Section<ObjectType>]()) { result, nextValue in
             var nextValue = nextValue
-            nextValue.objects = nextValue.objects.filter { !Set(fetchedObjects ?? []).contains($0) }
+            let objects = getOnlyNewObjects(nextValue.objects)
+            nextValue.objects = objects.filter { !tempSet.contains($0) }
+            tempSet = tempSet.union(objects)
             if !nextValue.objects.isEmpty {
                 result.append(nextValue.toSection())
             }
+        }
+    }
+    
+    private func performDelegateUpdate(_ update: @escaping () -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.delegate?.containerWillChangeContent(self)
+            update()
+            self.delegate?.containerDidChangeContent(self)
         }
     }
     
@@ -325,19 +385,27 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             objectsSet.contains(object)
         }
         
+        fileprivate func indexOfObject(_ object: ObjectType) -> Int? {
+            _objects.firstIndex(of: object)
+        }
+        
         fileprivate func append(_ objects: [ObjectType]) {
             _objects.append(contentsOf: objects)
         }
         
         fileprivate func insertObjects(_ objects: [ObjectType], beforeObject: ObjectType) {
-            if let beforeObjectIndex = _objects.firstIndex(of: beforeObject) {
+            if let beforeObjectIndex = indexOfObject(beforeObject) {
                 _objects.insert(contentsOf: objects, at: beforeObjectIndex)
             }
         }
         
         fileprivate func insertObjects(_ objects: [ObjectType], afterObject: ObjectType) {
-            if let afterObjectIndex = _objects.firstIndex(of: afterObject) {
-                _objects.insert(contentsOf: objects, at: afterObjectIndex + 1)
+            if let afterObjectIndex = indexOfObject(afterObject) {
+                if afterObjectIndex + 1 == numberOfObjects {
+                    _objects.append(contentsOf: objects)
+                } else {
+                    _objects.insert(contentsOf: objects, at: afterObjectIndex + 1)
+                }
             }
         }
         
@@ -346,16 +414,20 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
         
         fileprivate func moveObject(_ object: ObjectType, beforeObject: ObjectType) {
-            if let beforeObjectIndex = _objects.firstIndex(of: beforeObject) {
+            if let beforeObjectIndex = indexOfObject(beforeObject) {
                 _objects.removeAll { $0 == object }
                 _objects.insert(object, at: beforeObjectIndex)
             }
         }
         
         fileprivate func moveObject(_ object: ObjectType, afterObject: ObjectType) {
-            if let afterObjectIndex = _objects.firstIndex(of: afterObject) {
+            if let afterObjectIndex = indexOfObject(afterObject) {
                 _objects.removeAll { $0 == object }
-                _objects.insert(object, at: afterObjectIndex + 1)
+                if afterObjectIndex + 1 == numberOfObjects {
+                    _objects.append(object)
+                } else {
+                    _objects.insert(object, at: afterObjectIndex + 1)
+                }
             }
         }
         

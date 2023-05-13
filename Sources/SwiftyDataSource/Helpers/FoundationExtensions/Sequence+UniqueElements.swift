@@ -8,14 +8,9 @@
 
 import Foundation
 
-public extension Sequence where Element: Equatable {
-    var uniqueElements: [Element] {
-        return self.reduce(into: []) {
-            uniqueElements, element in
-            
-            if !uniqueElements.contains(element) {
-                uniqueElements.append(element)
-            }
-        }
+extension Sequence where Element: Hashable {
+    func uniqued() -> [Element] {
+        var set = Set<Element>()
+        return filter { set.insert($0).inserted }
     }
 }
