@@ -76,7 +76,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     public func appendObjects(_ objects: [ObjectType], to section: Section<ObjectType>?) {
         if let section, let sectionIndex = indexOfSection(section) {
-            let objectsToAppend = getOnlyNewObjects(objects.uniqued())
+            let objectsToAppend = getOnlyNewObjects(objects)
             if !objectsToAppend.isEmpty {
                 let objectsCountInSectionBeforeAppending = section.numberOfObjects
                 section.append(objectsToAppend)
@@ -92,7 +92,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     public func insertObjects(_ objects: [ObjectType], beforeObject: ObjectType) {
         if let section = section(containingObject: beforeObject), let sectionIndex = indexOfSection(section), let beforeObjectIndex = section.indexOfObject(beforeObject) {
-            let objectsToInsert = getOnlyNewObjects(objects.uniqued())
+            let objectsToInsert = getOnlyNewObjects(objects)
             if !objectsToInsert.isEmpty {
                 section.insertObjects(objectsToInsert, beforeObject: beforeObject)
                 performDelegateUpdate { [weak self] in
@@ -107,7 +107,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     public func insertObjects(_ objects: [ObjectType], afterObject: ObjectType) {
         if let section = section(containingObject: afterObject), let sectionIndex = indexOfSection(section), let afterObjectIndex = section.indexOfObject(afterObject) {
-            let objectsToInsert = getOnlyNewObjects(objects.uniqued())
+            let objectsToInsert = getOnlyNewObjects(objects)
             if !objectsToInsert.isEmpty {
                 section.insertObjects(objectsToInsert, afterObject: afterObject)
                 performDelegateUpdate { [weak self] in
