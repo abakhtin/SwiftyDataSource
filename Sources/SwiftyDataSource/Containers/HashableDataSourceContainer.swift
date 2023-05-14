@@ -11,11 +11,12 @@ import Foundation
 public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContainer<ObjectType> {
     private var _sections: [Section<ObjectType>] = []
     private var sectionsSet: Set<Section<ObjectType>> { Set(_sections) }
+    private var fetchedObjectsSet: Set<ObjectType> { Set(fetchedObjects ?? []) }
     
     public override var sections: [DataSourceSectionInfo]? { _sections }
     public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
     
-    public init(_ sections: [SectionRepresentable<ObjectType>] = []) {
+    public init(_ sections: [Section<ObjectType>] = []) {
         super.init()
         if !sections.isEmpty { appendSections(sections) }
     }
@@ -25,7 +26,9 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public override func indexPath(for object: ObjectType) -> IndexPath? {
-        if let sectionWithObject = section(containingObject: object), let sectionIndex = _sections.enumerated().first(where: { $0.element == sectionWithObject })?.offset, let objectIndex = sectionWithObject._objects.enumerated().first(where: { $0.element == object })?.offset {
+        if let sectionWithObject = section(containingObject: object),
+           let sectionIndex = indexOfSection(sectionWithObject),
+           let objectIndex = sectionWithObject.indexOfObject(object) {
             return IndexPath(row: objectIndex, section: sectionIndex)
         } else {
             return nil
@@ -43,7 +46,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             }
             if resultIndexPath != nil { return }
         }
-        return nil
+        return resultIndexPath
     }
     
     public override func enumerate(_ block: (IndexPath, ObjectType) -> Void) {
@@ -58,8 +61,16 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     public override func numberOfItems(in section: Int) -> Int? { _sections[safe: section]?.numberOfObjects }
     
-    public func objects(atSection sectionIndex: Int) -> [ObjectType] {
+    public func objects(atSectionIndex sectionIndex: Int) -> [ObjectType] {
         _sections[safe: sectionIndex]?._objects ?? []
+    }
+    
+    public func objects(atSection section: Section<ObjectType>) -> [ObjectType] {
+        section._objects
+    }
+    
+    public func objects(atSectionContaining object: ObjectType) -> [ObjectType] {
+        section(containingObject: object)?._objects ?? []
     }
     
     public func section(containingObject object: ObjectType) -> Section<ObjectType>? {
@@ -83,7 +94,16 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
                 performDelegateUpdate { [weak self] in
                     guard let self else { return }
                     objectsToAppend.enumerated().forEach { index, object in
-                        self.delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: IndexPath(row: objectsCountInSectionBeforeAppending == .zero ? index : objectsCountInSectionBeforeAppending + index, section: sectionIndex))
+                        self.delegate?.container(
+                            self,
+                            didChange: object,
+                            at: nil,
+                            for: .insert,
+                            newIndexPath: IndexPath(
+                                row: objectsCountInSectionBeforeAppending == .zero ? index : objectsCountInSectionBeforeAppending + index,
+                                section: sectionIndex
+                            )
+                        )
                     }
                 }
             }
@@ -91,14 +111,22 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func insertObjects(_ objects: [ObjectType], beforeObject: ObjectType) {
-        if let section = section(containingObject: beforeObject), let sectionIndex = indexOfSection(section), let beforeObjectIndex = section.indexOfObject(beforeObject) {
+        if let section = section(containingObject: beforeObject),
+           let sectionIndex = indexOfSection(section),
+           let beforeObjectIndex = section.indexOfObject(beforeObject) {
             let objectsToInsert = getOnlyNewObjects(objects)
             if !objectsToInsert.isEmpty {
                 section.insertObjects(objectsToInsert, beforeObject: beforeObject)
                 performDelegateUpdate { [weak self] in
                     guard let self else { return }
                     objectsToInsert.enumerated().forEach { index, object in
-                        self.delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: IndexPath(row: beforeObjectIndex + index, section: sectionIndex))
+                        self.delegate?.container(
+                            self,
+                            didChange: object,
+                            at: nil,
+                            for: .insert,
+                            newIndexPath: IndexPath(row: beforeObjectIndex + index, section: sectionIndex)
+                        )
                     }
                 }
             }
@@ -106,14 +134,22 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func insertObjects(_ objects: [ObjectType], afterObject: ObjectType) {
-        if let section = section(containingObject: afterObject), let sectionIndex = indexOfSection(section), let afterObjectIndex = section.indexOfObject(afterObject) {
+        if let section = section(containingObject: afterObject),
+           let sectionIndex = indexOfSection(section),
+           let afterObjectIndex = section.indexOfObject(afterObject) {
             let objectsToInsert = getOnlyNewObjects(objects)
             if !objectsToInsert.isEmpty {
                 section.insertObjects(objectsToInsert, afterObject: afterObject)
                 performDelegateUpdate { [weak self] in
                     guard let self else { return }
                     objectsToInsert.enumerated().forEach { index, object in
-                        self.delegate?.container(self, didChange: object, at: nil, for: .insert, newIndexPath: IndexPath(row: afterObjectIndex + index + 1, section: sectionIndex))
+                        self.delegate?.container(
+                            self,
+                            didChange: object,
+                            at: nil,
+                            for: .insert,
+                            newIndexPath: IndexPath(row: afterObjectIndex + index + 1, section: sectionIndex)
+                        )
                     }
                 }
             }
@@ -121,21 +157,21 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func deleteObjects(_ objects: [ObjectType]) {
-        var objectsToDeleteDictionary: [Section<ObjectType>: [ObjectType]] = [:]
-        objects.uniqued().forEach { object in
+        var objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section<ObjectType>: [ObjectType]]()) { result, object in
             if let section = section(containingObject: object) {
-                objectsToDeleteDictionary[section, default: []].append(object)
+                result[section, default: []].append(object)
             }
         }
-        var indexesOfDeletedObjects: [Int: [(ObjectType, Int)]] = [:]
+        var indexesOfDeletedObjects: [Int: [(object: ObjectType, index: Int)]] = [:]
         var sectionsForDelete: [Int: Section<ObjectType>] = [:]
+        
         objectsToDeleteDictionary.forEach { section, objects in
             if let sectionIndex = indexOfSection(section) {
-                let objectsAndIndexes = objects.compactMap { object -> (ObjectType, Int)? in
+                let objectsAndIndexes = objects.compactMap { object -> (object: ObjectType, index: Int)? in
                     guard let objectIndex = section.indexOfObject(object) else { return nil }
                     return (object, objectIndex)
                 }
-                section.deleteObjects(objectsAndIndexes.map { $0.0 })
+                section.deleteObjects(objectsAndIndexes.map { $0.object })
                 indexesOfDeletedObjects[sectionIndex] = objectsAndIndexes
                 if section.numberOfObjects == .zero {
                     sectionsForDelete[sectionIndex] = section
@@ -145,9 +181,14 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         _sections.removeAll() { sectionsForDelete.values.contains($0) }
         performDelegateUpdate { [weak self] in
             guard let self else { return }
-            indexesOfDeletedObjects.sorted { $0.key > $1.key }.forEach { sectionIndex, pairs in
-                pairs.sorted { $0.1 > $1.1 }.forEach { pair in
-                    self.delegate?.container(self, didChange: pair.0, at: IndexPath(row: pair.1, section: sectionIndex), for: .delete, newIndexPath: nil)
+            indexesOfDeletedObjects.sorted { $0.key > $1.key }.forEach { sectionIndex, enumeratedObjects in
+                enumeratedObjects.sorted { $0.index > $1.index }.forEach { enumeratedObject in
+                    self.delegate?.container(
+                        self,
+                        didChange: enumeratedObject.object,
+                        at: IndexPath(row: enumeratedObject.index, section: sectionIndex),
+                        for: .delete,
+                        newIndexPath: nil)
                 }
             }
             sectionsForDelete.sorted { $0.key > $1.key }.forEach { sectionIndex, section in
@@ -170,7 +211,12 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func moveObject(_ object: ObjectType, beforeObject: ObjectType) {
-        if let sectionOfObject = section(containingObject: object), let sectionIndex = indexOfSection(sectionOfObject), let indexOfObject = sectionOfObject.indexOfObject(object), let sectionOfBeforeObject = section(containingObject: beforeObject), let sectionIndexOfBeforeObject = indexOfSection(sectionOfBeforeObject), let indexOfBeforeObject = sectionOfObject.indexOfObject(beforeObject) {
+        if let sectionOfObject = section(containingObject: object),
+           let sectionIndex = indexOfSection(sectionOfObject),
+           let indexOfObject = sectionOfObject.indexOfObject(object),
+           let sectionOfBeforeObject = section(containingObject: beforeObject),
+           let sectionIndexOfBeforeObject = indexOfSection(sectionOfBeforeObject),
+           let indexOfBeforeObject = sectionOfObject.indexOfObject(beforeObject) {
             let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
             let newIndexPath = IndexPath(row: indexOfBeforeObject, section: sectionIndexOfBeforeObject)
             if oldIndexPath != newIndexPath {
@@ -189,7 +235,12 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func moveObject(_ object: ObjectType, afterObject: ObjectType) {
-        if let sectionOfObject = section(containingObject: object), let sectionIndex = indexOfSection(sectionOfObject), let indexOfObject = sectionOfObject.indexOfObject(object), let sectionOfAfterObject = section(containingObject: afterObject), let sectionIndexOfAfterObject = indexOfSection(sectionOfAfterObject), let indexOfAfterItem = sectionOfObject.indexOfObject(afterObject) {
+        if let sectionOfObject = section(containingObject: object),
+           let sectionIndex = indexOfSection(sectionOfObject),
+           let indexOfObject = sectionOfObject.indexOfObject(object),
+           let sectionOfAfterObject = section(containingObject: afterObject),
+           let sectionIndexOfAfterObject = indexOfSection(sectionOfAfterObject),
+           let indexOfAfterItem = sectionOfObject.indexOfObject(afterObject) {
             let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
             let newIndexPath = IndexPath(row: indexOfAfterItem + 1, section: sectionIndexOfAfterObject)
             if oldIndexPath != newIndexPath {
@@ -210,7 +261,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func reloadObjects(_ objects: [ObjectType]) {
-        let existingObjects = Set(objects).intersection(Set(fetchedObjects ?? []))
+        let existingObjects = Set(objects).intersection(fetchedObjectsSet)
         if !existingObjects.isEmpty {
             performDelegateUpdate { [weak self] in
                 guard let self else { return }
@@ -222,7 +273,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func reconfigureObjects(_ objects: [ObjectType]) {
-        let existingObjects = Set(objects).intersection(Set(fetchedObjects ?? []))
+        let existingObjects = Set(objects).intersection(fetchedObjectsSet)
         if !existingObjects.isEmpty {
             performDelegateUpdate { [weak self] in
                 guard let self else { return }
@@ -233,8 +284,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func appendSections(_ sections: [SectionRepresentable<ObjectType>]) {
-        let sectionsWithNewObjects = getSectionsWithNewObjects(from: sections)
+    public func appendSections(_ sections: [Section<ObjectType>]) {
+        let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
             _sections.append(contentsOf: sectionsWithNewObjects)
             performDelegateUpdate { [weak self] in
@@ -246,8 +297,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func insertSections(_ sections: [SectionRepresentable<ObjectType>], beforeSection: Section<ObjectType>) {
-        let sectionsWithNewObjects = getSectionsWithNewObjects(from: sections)
+    public func insertSections(_ sections: [Section<ObjectType>], beforeSection: Section<ObjectType>) {
+        let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
             if let beforeSectionIndex = _sections.firstIndex(of: beforeSection) {
                 _sections.insert(contentsOf: sectionsWithNewObjects, at: beforeSectionIndex)
@@ -261,8 +312,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func insertSections(_ sections: [SectionRepresentable<ObjectType>], afterSection: Section<ObjectType>) {
-        let sectionsWithNewObjects = getSectionsWithNewObjects(from: sections)
+    public func insertSections(_ sections: [Section<ObjectType>], afterSection: Section<ObjectType>) {
+        let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
             if let afterSectionIndex = _sections.firstIndex(of: afterSection) {
                 _sections.insert(contentsOf: sectionsWithNewObjects, at: afterSectionIndex + 1)
@@ -338,19 +389,18 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     private func getOnlyNewObjects(_ objects: [ObjectType]) -> [ObjectType] {
         let objects = objects.uniqued()
-        let newObjects = Set(objects).subtracting(Set(fetchedObjects ?? []))
+        let newObjects = Set(objects).subtracting(fetchedObjectsSet)
         return objects.filter { newObjects.contains($0) }
     }
     
-    private func getSectionsWithNewObjects(from sections: [SectionRepresentable<ObjectType>]) -> [Section<ObjectType>] {
+    private func filterSectionsForExistedObjects(in sections: [Section<ObjectType>]) -> [Section<ObjectType>] {
         var tempSet = Set<ObjectType>()
-        return sections.reduce(into: [Section<ObjectType>]()) { result, nextValue in
-            var nextValue = nextValue
-            let objects = getOnlyNewObjects(nextValue.objects)
-            nextValue.objects = objects.filter { !tempSet.contains($0) }
+        return sections.reduce(into: [Section<ObjectType>]()) { result, section in
+            let objects = getOnlyNewObjects(section._objects)
+            section._objects = objects.filter { !tempSet.contains($0) }
             tempSet = tempSet.union(objects)
-            if !nextValue.objects.isEmpty {
-                result.append(nextValue.toSection())
+            if !section._objects.isEmpty {
+                result.append(section)
             }
         }
     }
@@ -374,7 +424,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         fileprivate var _objects: [ObjectType] = []
         fileprivate var objectsSet: Set<ObjectType> { Set(_objects) }
         
-        init(sender: Any? = nil, name: String = .init(), indexTitle: String? = nil, objects: [ObjectType] = []) {
+        public init(sender: Any? = nil, name: String = .init(), indexTitle: String? = nil, objects: [ObjectType] = []) {
             self.sender = sender
             self.name = name
             self.indexTitle = indexTitle
@@ -439,24 +489,6 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             hasher.combine(_objects)
             hasher.combine(name)
             hasher.combine(indexTitle)
-        }
-    }
-    
-    public struct SectionRepresentable<ObjectType: Hashable> {
-        public var sender: Any? = nil
-        public var name: String = .init()
-        public var indexTitle: String? = nil
-        public var objects: [ObjectType] = []
-        
-        public init(sender: Any? = nil, name: String = .init(), indexTitle: String? = nil, objects: [ObjectType]) {
-            self.sender = sender
-            self.name = name
-            self.indexTitle = indexTitle
-            self.objects = objects
-        }
-        
-        fileprivate func toSection() -> Section<ObjectType> {
-            .init(sender: sender, name: name, indexTitle: indexTitle, objects: objects)
         }
     }
 }
