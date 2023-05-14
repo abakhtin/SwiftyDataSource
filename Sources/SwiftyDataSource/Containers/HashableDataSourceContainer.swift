@@ -77,6 +77,18 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         _sections.first { $0.contains(object: object) }
     }
     
+    public func firstObject(inSection section: Section<ObjectType>?) -> ObjectType? {
+        section?._objects.first
+    }
+    
+    public func lastObject(inSection section: Section<ObjectType>?) -> ObjectType? {
+        section?._objects.last
+    }
+    
+    public func contains(_ object: ObjectType) -> Bool {
+        fetchedObjectsSet.contains(object)
+    }
+    
     public func indexOfObject(_ object: ObjectType) -> Int? {
         indexPath(for: object)?.row
     }
@@ -258,6 +270,20 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             }
         }
         
+    }
+    
+    public func replaceObject(_ object: ObjectType, with newObject: ObjectType) {
+        if let sectionWithObject = section(containingObject: object),
+           let sectionIndex = indexOfSection(sectionWithObject),
+           let objectIndex = sectionWithObject.indexOfObject(object) {
+            sectionWithObject.replaceObject(object, with: newObject)
+            let indexPath = IndexPath(row: objectIndex, section: sectionIndex)
+            performDelegateUpdate { [weak self] in
+                guard let self else { return }
+                delegate?.container(self, didChange: object, at: indexPath, for: .delete, newIndexPath: nil)
+                delegate?.container(self, didChange: newObject, at: indexPath, for: .insert, newIndexPath: indexPath)
+            }
+        }
     }
     
     public func reloadObjects(_ objects: [ObjectType]) {
@@ -483,6 +509,11 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
                     _objects.insert(object, at: afterObjectIndex + 1)
                 }
             }
+        }
+        
+        fileprivate func replaceObject(_ object: ObjectType, with newObject: ObjectType) {
+            insertObjects([newObject], afterObject: object)
+            deleteObjects([object])
         }
         
         public static func == (lhs: Section<ObjectType>, rhs: Section<ObjectType>) -> Bool {
