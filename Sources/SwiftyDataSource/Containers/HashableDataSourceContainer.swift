@@ -157,7 +157,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func deleteObjects(_ objects: [ObjectType]) {
-        var objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section<ObjectType>: [ObjectType]]()) { result, object in
+        let objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section<ObjectType>: [ObjectType]]()) { result, object in
             if let section = section(containingObject: object) {
                 result[section, default: []].append(object)
             }
@@ -300,7 +300,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public func insertSections(_ sections: [Section<ObjectType>], beforeSection: Section<ObjectType>) {
         let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
-            if let beforeSectionIndex = _sections.firstIndex(of: beforeSection) {
+            if let beforeSectionIndex = indexOfSection(beforeSection) {
                 _sections.insert(contentsOf: sectionsWithNewObjects, at: beforeSectionIndex)
                 performDelegateUpdate { [weak self] in
                     guard let self else { return }
@@ -315,7 +315,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public func insertSections(_ sections: [Section<ObjectType>], afterSection: Section<ObjectType>) {
         let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
-            if let afterSectionIndex = _sections.firstIndex(of: afterSection) {
+            if let afterSectionIndex = indexOfSection(afterSection) {
                 _sections.insert(contentsOf: sectionsWithNewObjects, at: afterSectionIndex + 1)
                 performDelegateUpdate { [weak self] in
                     guard let self else { return }
@@ -346,21 +346,24 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func moveSection(_ section: Section<ObjectType>, beforeSection: Section<ObjectType>) {
-        if let sectionIndex = _sections.firstIndex(of: section), let beforeSectionIndex = _sections.firstIndex(of: beforeSection) {
+        if let sectionIndex = indexOfSection(section),
+           let beforeSectionIndex = indexOfSection(beforeSection) {
             _sections.remove(at: sectionIndex)
             _sections.insert(section, at: beforeSectionIndex)
             
             performDelegateUpdate { [weak self] in
                 guard let self else { return }
-                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .move)
+                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+                delegate?.container(self, didChange: section, atSectionIndex: beforeSectionIndex, for: .insert)
             }
         }
     }
     
     public func moveSection(_ section: Section<ObjectType>, afterSection: Section<ObjectType>) {
-        if let sectionIndex = _sections.firstIndex(of: section), let afterSectionIndex = _sections.firstIndex(of: afterSection) {
+        if let sectionIndex = indexOfSection(section),
+           let afterSectionIndex = indexOfSection(afterSection) {
             _sections.remove(at: sectionIndex)
-            if afterSectionIndex < _sections.count - 1 {
+            if afterSectionIndex + 1 < _sections.count {
                 _sections.insert(section, at: afterSectionIndex + 1)
             } else {
                 _sections.append(section)
@@ -368,7 +371,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             
             performDelegateUpdate { [weak self] in
                 guard let self else { return }
-                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .move)
+                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+                delegate?.container(self, didChange: section, atSectionIndex: afterSectionIndex + 1, for: .insert)
             }
         }
     }
