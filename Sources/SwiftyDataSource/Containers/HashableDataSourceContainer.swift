@@ -16,6 +16,50 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public override var sections: [DataSourceSectionInfo]? { _sections }
     public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
     
+    private var isExecutingTask = false
+    private var taskArray: [DispatchWorkItem] = []
+    private var updateTask: DispatchWorkItem?
+    
+    private func executeNextTask() {
+        if !isExecutingTask {
+            if let updateTask {
+                isExecutingTask = true
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    updateTask.perform()
+                    self.updateTask = nil
+                    self.isExecutingTask = false
+                    self.executeNextTask()
+                }
+            } else if let task = taskArray.first {
+                isExecutingTask = true
+                DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+                    guard let self else { return }
+                    task.perform()
+                    DispatchQueue.main.async {
+                        self.taskArray.removeFirst()
+                        self.isExecutingTask = false
+                        self.executeNextTask()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func addTask(_ task: @escaping () -> Void) {
+        taskArray.append(.init(block: task))
+        executeNextTask()
+    }
+    
+    private func setUpdateTask(_ task: @escaping () -> Void) {
+        updateTask = .init { [weak self] in
+            guard let self else { return }
+            self.delegate?.containerWillChangeContent(self)
+            task()
+            self.delegate?.containerDidChangeContent(self)
+        }
+    }
+    
     public init(_ sections: [Section] = []) {
         super.init()
         if !sections.isEmpty { appendSections(sections) }
@@ -98,24 +142,26 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func appendObjects(_ objects: [ObjectType], to section: Section?) {
-        if let section, let sectionIndex = indexOfSection(section) {
-            let objectsToAppend = getOnlyNewObjects(objects)
-            if !objectsToAppend.isEmpty {
-                let objectsCountInSectionBeforeAppending = section.numberOfObjects
-                section.append(objectsToAppend)
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    objectsToAppend.enumerated().forEach { index, object in
-                        self.delegate?.container(
-                            self,
-                            didChange: object,
-                            at: nil,
-                            for: .insert,
-                            newIndexPath: IndexPath(
-                                row: objectsCountInSectionBeforeAppending == .zero ? index : objectsCountInSectionBeforeAppending + index,
-                                section: sectionIndex
+        addTask { [weak self] in
+            guard let self else { return }
+            if let section, let sectionIndex = self.indexOfSection(section) {
+                let objectsToAppend = self.getOnlyNewObjects(objects)
+                if !objectsToAppend.isEmpty {
+                    let objectsCountInSectionBeforeAppending = section.numberOfObjects
+                    section.append(objectsToAppend)
+                    self.setUpdateTask {
+                        objectsToAppend.enumerated().forEach { index, object in
+                            self.delegate?.container(
+                                self,
+                                didChange: object,
+                                at: nil,
+                                for: .insert,
+                                newIndexPath: IndexPath(
+                                    row: objectsCountInSectionBeforeAppending == .zero ? index : objectsCountInSectionBeforeAppending + index,
+                                    section: sectionIndex
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -123,22 +169,24 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func insertObjects(_ objects: [ObjectType], beforeObject: ObjectType) {
-        if let section = section(containingObject: beforeObject),
-           let sectionIndex = indexOfSection(section),
-           let beforeObjectIndex = section.indexOfObject(beforeObject) {
-            let objectsToInsert = getOnlyNewObjects(objects)
-            if !objectsToInsert.isEmpty {
-                section.insertObjects(objectsToInsert, beforeObject: beforeObject)
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    objectsToInsert.enumerated().forEach { index, object in
-                        self.delegate?.container(
-                            self,
-                            didChange: object,
-                            at: nil,
-                            for: .insert,
-                            newIndexPath: IndexPath(row: beforeObjectIndex + index, section: sectionIndex)
-                        )
+        addTask { [weak self] in
+            guard let self else { return }
+            if let section = self.section(containingObject: beforeObject),
+               let sectionIndex = self.indexOfSection(section),
+               let beforeObjectIndex = section.indexOfObject(beforeObject) {
+                let objectsToInsert = self.getOnlyNewObjects(objects)
+                if !objectsToInsert.isEmpty {
+                    section.insertObjects(objectsToInsert, beforeObject: beforeObject)
+                    self.setUpdateTask {
+                        objectsToInsert.enumerated().forEach { index, object in
+                            self.delegate?.container(
+                                self,
+                                didChange: object,
+                                at: nil,
+                                for: .insert,
+                                newIndexPath: IndexPath(row: beforeObjectIndex + index, section: sectionIndex)
+                            )
+                        }
                     }
                 }
             }
@@ -146,22 +194,24 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func insertObjects(_ objects: [ObjectType], afterObject: ObjectType) {
-        if let section = section(containingObject: afterObject),
-           let sectionIndex = indexOfSection(section),
-           let afterObjectIndex = section.indexOfObject(afterObject) {
-            let objectsToInsert = getOnlyNewObjects(objects)
-            if !objectsToInsert.isEmpty {
-                section.insertObjects(objectsToInsert, afterObject: afterObject)
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    objectsToInsert.enumerated().forEach { index, object in
-                        self.delegate?.container(
-                            self,
-                            didChange: object,
-                            at: nil,
-                            for: .insert,
-                            newIndexPath: IndexPath(row: afterObjectIndex + index + 1, section: sectionIndex)
-                        )
+        addTask { [weak self] in
+            guard let self else { return }
+            if let section = self.section(containingObject: afterObject),
+               let sectionIndex = self.indexOfSection(section),
+               let afterObjectIndex = section.indexOfObject(afterObject) {
+                let objectsToInsert = self.getOnlyNewObjects(objects)
+                if !objectsToInsert.isEmpty {
+                    section.insertObjects(objectsToInsert, afterObject: afterObject)
+                    self.setUpdateTask {
+                        objectsToInsert.enumerated().forEach { index, object in
+                            self.delegate?.container(
+                                self,
+                                didChange: object,
+                                at: nil,
+                                for: .insert,
+                                newIndexPath: IndexPath(row: afterObjectIndex + index + 1, section: sectionIndex)
+                            )
+                        }
                     }
                 }
             }
@@ -169,169 +219,186 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func deleteObjects(_ objects: [ObjectType]) {
-        let objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section: [ObjectType]]()) { result, object in
-            if let section = section(containingObject: object) {
-                result[section, default: []].append(object)
-            }
-        }
-        var indexesOfDeletedObjects: [Int: [(object: ObjectType, index: Int)]] = [:]
-        var sectionsForDelete: [Int: Section] = [:]
-        
-        objectsToDeleteDictionary.forEach { section, objects in
-            if let sectionIndex = indexOfSection(section) {
-                let objectsAndIndexes = objects.compactMap { object -> (object: ObjectType, index: Int)? in
-                    guard let objectIndex = section.indexOfObject(object) else { return nil }
-                    return (object, objectIndex)
-                }
-                section.deleteObjects(objectsAndIndexes.map { $0.object })
-                indexesOfDeletedObjects[sectionIndex] = objectsAndIndexes
-                if section.numberOfObjects == .zero {
-                    sectionsForDelete[sectionIndex] = section
-                }
-            }
-        }
-        _sections.removeAll() { sectionsForDelete.values.contains($0) }
-        performDelegateUpdate { [weak self] in
+        addTask { [weak self] in
             guard let self else { return }
-            indexesOfDeletedObjects.sorted { $0.key > $1.key }.forEach { sectionIndex, enumeratedObjects in
-                enumeratedObjects.sorted { $0.index > $1.index }.forEach { enumeratedObject in
-                    self.delegate?.container(
-                        self,
-                        didChange: enumeratedObject.object,
-                        at: IndexPath(row: enumeratedObject.index, section: sectionIndex),
-                        for: .delete,
-                        newIndexPath: nil)
+            let objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section: [ObjectType]]()) { result, object in
+                if let section = self.section(containingObject: object) {
+                    result[section, default: []].append(object)
                 }
             }
-            sectionsForDelete.sorted { $0.key > $1.key }.forEach { sectionIndex, section in
-                self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+            var indexesOfDeletedObjects: [Int: [(object: ObjectType, index: Int)]] = [:]
+            var sectionsForDelete: [Int: Section] = [:]
+            
+            objectsToDeleteDictionary.forEach { section, objects in
+                if let sectionIndex = self.indexOfSection(section) {
+                    let objectsAndIndexes = objects.compactMap { object -> (object: ObjectType, index: Int)? in
+                        guard let objectIndex = section.indexOfObject(object) else { return nil }
+                        return (object, objectIndex)
+                    }
+                    section.deleteObjects(objectsAndIndexes.map { $0.object })
+                    indexesOfDeletedObjects[sectionIndex] = objectsAndIndexes
+                    if section.numberOfObjects == .zero {
+                        sectionsForDelete[sectionIndex] = section
+                    }
+                }
+            }
+            self._sections.removeAll() { sectionsForDelete.values.contains($0) }
+            self.setUpdateTask {
+                indexesOfDeletedObjects.sorted { $0.key > $1.key }.forEach { sectionIndex, enumeratedObjects in
+                    enumeratedObjects.sorted { $0.index > $1.index }.forEach { enumeratedObject in
+                        self.delegate?.container(
+                            self,
+                            didChange: enumeratedObject.object,
+                            at: IndexPath(row: enumeratedObject.index, section: sectionIndex),
+                            for: .delete,
+                            newIndexPath: nil)
+                    }
+                }
+                sectionsForDelete.sorted { $0.key > $1.key }.forEach { sectionIndex, section in
+                    self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+                }
             }
         }
     }
     
     public func deleteAllObjects() {
-        let sections = _sections
-        if !sections.isEmpty {
-            _sections = []
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                sections.enumerated().forEach { index, section in
-                    self.delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+        addTask { [weak self] in
+            guard let self else { return }
+            let sections = self._sections
+            self._sections = []
+            if !sections.isEmpty {
+                self.setUpdateTask {
+                    sections.enumerated().forEach { index, section in
+                        self.delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+                    }
                 }
             }
         }
     }
     
     public func moveObject(_ object: ObjectType, beforeObject: ObjectType) {
-        if let sectionOfObject = section(containingObject: object),
-           let sectionIndex = indexOfSection(sectionOfObject),
-           let indexOfObject = sectionOfObject.indexOfObject(object),
-           let sectionOfBeforeObject = section(containingObject: beforeObject),
-           let sectionIndexOfBeforeObject = indexOfSection(sectionOfBeforeObject),
-           let indexOfBeforeObject = sectionOfObject.indexOfObject(beforeObject) {
-            let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
-            let newIndexPath = IndexPath(row: indexOfBeforeObject, section: sectionIndexOfBeforeObject)
-            if oldIndexPath != newIndexPath {
-                if sectionOfObject == sectionOfBeforeObject {
-                    sectionOfObject.moveObject(object, beforeObject: beforeObject)
-                } else {
-                    sectionOfObject.deleteObjects([object])
-                    sectionOfBeforeObject.insertObjects([object], beforeObject: beforeObject)
-                }
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
+        addTask { [weak self] in
+            guard let self else { return }
+            if let sectionOfObject = self.section(containingObject: object),
+               let sectionIndex = self.indexOfSection(sectionOfObject),
+               let indexOfObject = sectionOfObject.indexOfObject(object),
+               let sectionOfBeforeObject = self.section(containingObject: beforeObject),
+               let sectionIndexOfBeforeObject = self.indexOfSection(sectionOfBeforeObject),
+               let indexOfBeforeObject = sectionOfObject.indexOfObject(beforeObject) {
+                let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
+                let newIndexPath = IndexPath(row: indexOfBeforeObject, section: sectionIndexOfBeforeObject)
+                if oldIndexPath != newIndexPath {
+                    if sectionOfObject == sectionOfBeforeObject {
+                        sectionOfObject.moveObject(object, beforeObject: beforeObject)
+                    } else {
+                        sectionOfObject.deleteObjects([object])
+                        sectionOfBeforeObject.insertObjects([object], beforeObject: beforeObject)
+                    }
+                    self.setUpdateTask {
+                        self.delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
+                    }
                 }
             }
         }
     }
     
     public func moveObject(_ object: ObjectType, afterObject: ObjectType) {
-        if let sectionOfObject = section(containingObject: object),
-           let sectionIndex = indexOfSection(sectionOfObject),
-           let indexOfObject = sectionOfObject.indexOfObject(object),
-           let sectionOfAfterObject = section(containingObject: afterObject),
-           let sectionIndexOfAfterObject = indexOfSection(sectionOfAfterObject),
-           let indexOfAfterItem = sectionOfObject.indexOfObject(afterObject) {
-            let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
-            let newIndexPath = IndexPath(row: indexOfAfterItem + 1, section: sectionIndexOfAfterObject)
-            if oldIndexPath != newIndexPath {
-                if sectionOfObject == sectionOfAfterObject {
-                    sectionOfObject.moveObject(object, afterObject: afterObject)
-                } else {
-                    sectionOfObject.deleteObjects([object])
-                    sectionOfAfterObject.insertObjects([object], afterObject: afterObject)
-                    
-                }
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
+        addTask { [weak self] in
+            guard let self else { return }
+            if let sectionOfObject = self.section(containingObject: object),
+               let sectionIndex = self.indexOfSection(sectionOfObject),
+               let indexOfObject = sectionOfObject.indexOfObject(object),
+               let sectionOfAfterObject = self.section(containingObject: afterObject),
+               let sectionIndexOfAfterObject = self.indexOfSection(sectionOfAfterObject),
+               let indexOfAfterItem = sectionOfObject.indexOfObject(afterObject) {
+                let oldIndexPath = IndexPath(row: indexOfObject, section: sectionIndex)
+                let newIndexPath = IndexPath(row: indexOfAfterItem + 1, section: sectionIndexOfAfterObject)
+                if oldIndexPath != newIndexPath {
+                    if sectionOfObject == sectionOfAfterObject {
+                        sectionOfObject.moveObject(object, afterObject: afterObject)
+                    } else {
+                        sectionOfObject.deleteObjects([object])
+                        sectionOfAfterObject.insertObjects([object], afterObject: afterObject)
+                        
+                    }
+                    self.setUpdateTask {
+                        self.delegate?.container(self, didChange: object, at: oldIndexPath, for: .move, newIndexPath: newIndexPath)
+                    }
                 }
             }
         }
-        
     }
     
     public func replaceObject(_ object: ObjectType, with newObject: ObjectType) {
-        if let sectionWithObject = section(containingObject: object),
-           let sectionIndex = indexOfSection(sectionWithObject),
-           let objectIndex = sectionWithObject.indexOfObject(object) {
-            sectionWithObject.replaceObject(object, with: newObject)
-            let indexPath = IndexPath(row: objectIndex, section: sectionIndex)
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                delegate?.container(self, didChange: object, at: indexPath, for: .delete, newIndexPath: nil)
-                delegate?.container(self, didChange: newObject, at: indexPath, for: .insert, newIndexPath: indexPath)
+        addTask { [weak self] in
+            guard let self else { return }
+            if let sectionWithObject = self.section(containingObject: object),
+               let sectionIndex = self.indexOfSection(sectionWithObject),
+               let objectIndex = sectionWithObject.indexOfObject(object) {
+                sectionWithObject.replaceObject(object, with: newObject)
+                let indexPath = IndexPath(row: objectIndex, section: sectionIndex)
+                self.setUpdateTask {
+                    self.delegate?.container(self, didChange: object, at: indexPath, for: .delete, newIndexPath: nil)
+                    self.delegate?.container(self, didChange: newObject, at: indexPath, for: .insert, newIndexPath: indexPath)
+                }
             }
         }
     }
     
     public func reloadObjects(_ objects: [ObjectType]) {
-        let existingObjects = Set(objects).intersection(fetchedObjectsSet)
-        if !existingObjects.isEmpty {
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                existingObjects.forEach { object in
-                    self.delegate?.container(self, didChange: object, at: self.indexPath(for: object), for: .reload, newIndexPath: nil)
+        addTask { [weak self] in
+            guard let self else { return }
+            let existingObjects = Set(objects).intersection(self.fetchedObjectsSet)
+            if !existingObjects.isEmpty {
+                self.setUpdateTask {
+                    existingObjects.forEach { object in
+                        self.delegate?.container(self, didChange: object, at: self.indexPath(for: object), for: .reload, newIndexPath: nil)
+                    }
                 }
             }
         }
     }
     
     public func reconfigureObjects(_ objects: [ObjectType]) {
-        let existingObjects = Set(objects).intersection(fetchedObjectsSet)
-        if !existingObjects.isEmpty {
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                existingObjects.forEach { object in
-                    self.delegate?.container(self, didChange: object, at: self.indexPath(for: object), for: .update, newIndexPath: nil)
+        addTask { [weak self] in
+            guard let self else { return }
+            let existingObjects = Set(objects).intersection(self.fetchedObjectsSet)
+            if !existingObjects.isEmpty {
+                self.setUpdateTask {
+                    existingObjects.forEach { object in
+                        self.delegate?.container(self, didChange: object, at: self.indexPath(for: object), for: .update, newIndexPath: nil)
+                    }
                 }
             }
         }
     }
     
     public func appendSections(_ sections: [Section]) {
-        let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
-        if !sectionsWithNewObjects.isEmpty {
-            _sections.append(contentsOf: sectionsWithNewObjects)
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
-                    self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+        addTask { [weak self] in
+            guard let self else { return }
+            let sectionsWithNewObjects = self.filterSectionsForExistedObjects(in: sections)
+            if !sectionsWithNewObjects.isEmpty {
+                self._sections.append(contentsOf: sectionsWithNewObjects)
+                self.setUpdateTask {
+                    self._sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
+                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                    }
                 }
             }
         }
     }
     
     public func insertSections(_ sections: [Section], beforeSection: Section) {
-        let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
-        if !sectionsWithNewObjects.isEmpty {
-            if let beforeSectionIndex = indexOfSection(beforeSection) {
-                _sections.insert(contentsOf: sectionsWithNewObjects, at: beforeSectionIndex)
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
-                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+        addTask { [weak self] in
+            guard let self else { return }
+            let sectionsWithNewObjects = self.filterSectionsForExistedObjects(in: sections)
+            if !sectionsWithNewObjects.isEmpty {
+                if let beforeSectionIndex = self.indexOfSection(beforeSection) {
+                    self._sections.insert(contentsOf: sectionsWithNewObjects, at: beforeSectionIndex)
+                    self.setUpdateTask {
+                        self._sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
+                            self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                        }
                     }
                 }
             }
@@ -339,14 +406,16 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func insertSections(_ sections: [Section], afterSection: Section) {
-        let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
-        if !sectionsWithNewObjects.isEmpty {
-            if let afterSectionIndex = indexOfSection(afterSection) {
-                _sections.insert(contentsOf: sectionsWithNewObjects, at: afterSectionIndex + 1)
-                performDelegateUpdate { [weak self] in
-                    guard let self else { return }
-                    _sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
-                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+        addTask { [weak self] in
+            guard let self else { return }
+            let sectionsWithNewObjects = self.filterSectionsForExistedObjects(in: sections)
+            if !sectionsWithNewObjects.isEmpty {
+                if let afterSectionIndex = self.indexOfSection(afterSection) {
+                    self._sections.insert(contentsOf: sectionsWithNewObjects, at: afterSectionIndex + 1)
+                    self.setUpdateTask {
+                        self._sections.enumerated().filter { sectionsWithNewObjects.contains($0.element) }.forEach { sectionIndex, section in
+                            self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .insert)
+                        }
                     }
                 }
             }
@@ -354,63 +423,71 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func deleteSections(_ sections: [Section]) {
-        let existingSections = Set(sections).intersection(sectionsSet)
-        if !existingSections.isEmpty {
-            let sectionsForRemove = existingSections.reduce(into: [Int: Section]()) { result, section in
-                if let sectionIndex = indexOfSection(section) {
-                    result[sectionIndex] = section
+        addTask { [weak self] in
+            guard let self else { return }
+            let existingSections = Set(sections).intersection(self.sectionsSet)
+            if !existingSections.isEmpty {
+                let sectionsForRemove = existingSections.reduce(into: [Int: Section]()) { result, section in
+                    if let sectionIndex = self.indexOfSection(section) {
+                        result[sectionIndex] = section
+                    }
                 }
-            }
-            _sections.removeAll { Set(sectionsForRemove.values).contains($0) }
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                sectionsForRemove.forEach { index, section in
-                    self.delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+                self._sections.removeAll { Set(sectionsForRemove.values).contains($0) }
+                self.setUpdateTask {
+                    sectionsForRemove.forEach { index, section in
+                        self.delegate?.container(self, didChange: section, atSectionIndex: index, for: .delete)
+                    }
                 }
             }
         }
     }
     
     public func moveSection(_ section: Section, beforeSection: Section) {
-        if let sectionIndex = indexOfSection(section),
-           let beforeSectionIndex = indexOfSection(beforeSection) {
-            _sections.remove(at: sectionIndex)
-            _sections.insert(section, at: beforeSectionIndex)
-            
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
-                delegate?.container(self, didChange: section, atSectionIndex: beforeSectionIndex, for: .insert)
+        addTask { [weak self] in
+            guard let self else { return }
+            if let sectionIndex = self.indexOfSection(section),
+               let beforeSectionIndex = self.indexOfSection(beforeSection) {
+                self._sections.remove(at: sectionIndex)
+                self._sections.insert(section, at: beforeSectionIndex)
+                
+                self.setUpdateTask {
+                    self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+                    self.delegate?.container(self, didChange: section, atSectionIndex: beforeSectionIndex, for: .insert)
+                }
             }
         }
     }
     
     public func moveSection(_ section: Section, afterSection: Section) {
-        if let sectionIndex = indexOfSection(section),
-           let afterSectionIndex = indexOfSection(afterSection) {
-            _sections.remove(at: sectionIndex)
-            if afterSectionIndex + 1 < _sections.count {
-                _sections.insert(section, at: afterSectionIndex + 1)
-            } else {
-                _sections.append(section)
-            }
-            
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
-                delegate?.container(self, didChange: section, atSectionIndex: afterSectionIndex + 1, for: .insert)
+        addTask { [weak self] in
+            guard let self else { return }
+            if let sectionIndex = self.indexOfSection(section),
+               let afterSectionIndex = self.indexOfSection(afterSection) {
+                self._sections.remove(at: sectionIndex)
+                if afterSectionIndex + 1 < self._sections.count {
+                    self._sections.insert(section, at: afterSectionIndex + 1)
+                } else {
+                    self._sections.append(section)
+                }
+                
+                self.setUpdateTask {
+                    self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .delete)
+                    self.delegate?.container(self, didChange: section, atSectionIndex: afterSectionIndex + 1, for: .insert)
+                }
             }
         }
     }
     
     public func reloadSections(_ sections: [Section]) {
-        let existingSections = Set(sections).intersection(sectionsSet)
-        if !existingSections.isEmpty {
-            performDelegateUpdate { [weak self] in
-                guard let self else { return }
-                sections.forEach { section in
-                    if let sectionIndex = self.indexOfSection(section) {
-                        self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .reload)
+        addTask { [weak self] in
+            guard let self else { return }
+            let existingSections = Set(sections).intersection(self.sectionsSet)
+            if !existingSections.isEmpty {
+                self.setUpdateTask {
+                    sections.forEach { section in
+                        if let sectionIndex = self.indexOfSection(section) {
+                            self.delegate?.container(self, didChange: section, atSectionIndex: sectionIndex, for: .reload)
+                        }
                     }
                 }
             }
@@ -432,15 +509,6 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             if !section._objects.isEmpty {
                 result.append(section)
             }
-        }
-    }
-    
-    private func performDelegateUpdate(_ update: @escaping () -> Void) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.delegate?.containerWillChangeContent(self)
-            update()
-            self.delegate?.containerDidChangeContent(self)
         }
     }
     
