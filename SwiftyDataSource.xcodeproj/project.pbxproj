@@ -14,6 +14,7 @@
 		1D1F7FC82024872F006B87D8 /* SwiftyDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1F7FC72024872F006B87D8 /* SwiftyDataSourceTests.swift */; };
 		1D1F7FCA2024872F006B87D8 /* SwiftyDataSource.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D7B8F422004D1B100400613 /* SwiftyDataSource.framework */; };
 		1D7B8F472004D1B100400613 /* SwiftyDataSource.h in Headers */ = {isa = PBXBuildFile; fileRef = 1D7B8F452004D1B100400613 /* SwiftyDataSource.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		886E98592A0F6A3D003192A9 /* HashableDataSourceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */; };
 		A9F1277F28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */; };
 		B81D742622402FD300707EA2 /* MapViewDataSourceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D742522402FD300707EA2 /* MapViewDataSourceDelegate.swift */; };
 		B83ED0E7231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B83ED0E6231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift */; };
@@ -78,6 +79,7 @@
 		1D7B8F422004D1B100400613 /* SwiftyDataSource.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftyDataSource.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D7B8F452004D1B100400613 /* SwiftyDataSource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SwiftyDataSource.h; sourceTree = "<group>"; };
 		1D7B8F462004D1B100400613 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashableDataSourceContainer.swift; sourceTree = "<group>"; };
 		A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataSourceContainer+Matchable.swift"; sourceTree = "<group>"; };
 		B81D742522402FD300707EA2 /* MapViewDataSourceDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewDataSourceDelegate.swift; sourceTree = "<group>"; };
 		B83ED0E6231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIDocumentInteractionControllerPresenter.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				B84F3C6E21CAFE1600489349 /* DataSourceContainer.swift */,
 				04AE9D6024CF5A5600F65F6E /* DataSourceContainer+IdentifiableProtocol.swift */,
 				A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */,
+				886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */,
 			);
 			path = Containers;
 			sourceTree = "<group>";
@@ -427,6 +430,7 @@
 				BCFA3BAA23A82B6300BA19BC /* NoDataView+Text.swift in Sources */,
 				04AE9D6124CF5A5600F65F6E /* DataSourceContainer+IdentifiableProtocol.swift in Sources */,
 				B8F4AC262267869100F85471 /* UIStackView+RemoveAllSubviews.swift in Sources */,
+				886E98592A0F6A3D003192A9 /* HashableDataSourceContainer.swift in Sources */,
 				B8F4AC2A2267869100F85471 /* NSFetchRequest+Sorting.swift in Sources */,
 				B8F4AC202267869100F85471 /* UIImage+String.swift in Sources */,
 				FA91B560292250B90007E7E8 /* HasBackgroundView.swift in Sources */,

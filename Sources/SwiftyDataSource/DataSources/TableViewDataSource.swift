@@ -322,11 +322,10 @@ extension TableViewDataSource: DataSourceContainerDelegate {
                 tableView?.deleteRows(at: [indexPath], with: .fade)
             }
         case .move:
-            if let indexPath = indexPath, let newIndexPath = newIndexPath, indexPath != newIndexPath {
+            if let indexPath, let newIndexPath, indexPath != newIndexPath {
                 tableView?.deleteRows(at: [indexPath], with: UITableView.RowAnimation.none)
                 tableView?.insertRows(at: [newIndexPath], with: UITableView.RowAnimation.none)
-            }
-            if let indexPath = indexPath {
+            } else if let indexPath {
                 tableView?.reloadRows(at: [indexPath], with: .fade)
             }
         case .update:
