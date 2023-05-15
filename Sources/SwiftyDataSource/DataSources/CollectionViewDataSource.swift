@@ -79,15 +79,15 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         guard let object = object(at: indexPath) else {
             fatalError("Could not retrieve object at \(indexPath)")
         }
-        let cellIdentifier = delegate?.dataSource(self, cellIdentifierFor: object, at: indexPath) ?? self.cellIdentifier
-        guard let identifier = cellIdentifier else {
+        guard let cellIdentifier = delegate?.dataSource(self, cellIdentifierFor: object, at: indexPath) ?? cellIdentifier else {
             fatalError("Cell identifier is empty")
         }
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: identifier, for: indexPath) 
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath)
         guard let configurableCell = cell as? DataSourceConfigurable else {
             fatalError("Cell is not implementing DataSourceConfigurable protocol")
         }
         configurableCell.configure(with: object)
+        delegate?.dataSource(self, setupCell: cell, at: indexPath)
         return cell
     }
 

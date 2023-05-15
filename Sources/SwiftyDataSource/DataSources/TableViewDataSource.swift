@@ -76,30 +76,29 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
         guard let object = object(at: indexPath) else {
             fatalError("Could not retrieve object at \(indexPath)")
         }
-        let cellIdentifier = delegate?.dataSource(self, cellIdentifierFor: object, at: indexPath) ?? self.cellIdentifier
-        guard let identifier = cellIdentifier else {
+        guard let cellIdentifier = delegate?.dataSource(self, cellIdentifierFor: object, at: indexPath) ?? cellIdentifier else {
             fatalError("Cell identifier is empty")
         }
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: identifier) else {
-            fatalError("Cell is nil after dequeuring for identifier: \(identifier)")
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier) else {
+            fatalError("Cell is nil after dequeuring for identifier: \(cellIdentifier)")
         }
         guard let configurableCell = cell as? DataSourceConfigurable else {
             fatalError("Cell is not implementing DataSourceConfigurable protocol")
         }
         configurableCell.configure(with: object)
         if let positionHandler = cell as? DataSourcePositionHandler,
-            let position = position(of: indexPath) {
+           let position = position(of: indexPath) {
             positionHandler.configure(for: position)
         }
         if let delegate = delegate,
-            let accessoryType = delegate.dataSource(self, accessoryTypeFor: object, at: indexPath) {
+           let accessoryType = delegate.dataSource(self, accessoryTypeFor: object, at: indexPath) {
             cell.accessoryType = accessoryType
         }
         if var expandable = cell as? DataSourceExpandable {
             expandable.setExpanded(value: expandedCells.firstIndex(of: indexPath) != nil)
             cell.setNeedsUpdateConstraints()
         }
-
+        delegate?.dataSource(self, setupCell: cell, at: indexPath)
         return cell
     }
 
