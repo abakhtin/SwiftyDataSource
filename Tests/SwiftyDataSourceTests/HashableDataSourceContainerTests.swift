@@ -10,7 +10,7 @@ import XCTest
 @testable import SwiftyDataSource
 
 class HashableDataSourceContainerTests: XCTestCase {
-    typealias HashableSection = HashableDataSourceContainer<Int>.Section<Int>
+    typealias HashableSection = HashableDataSourceContainer<Int>.Section
     var sut: HashableDataSourceContainer<Int>!
     
     override func setUp() {
