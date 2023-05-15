@@ -9,14 +9,14 @@
 import Foundation
 
 public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContainer<ObjectType> {
-    private var _sections: [Section<ObjectType>] = []
-    private var sectionsSet: Set<Section<ObjectType>> { Set(_sections) }
+    private var _sections: [Section] = []
+    private var sectionsSet: Set<Section> { Set(_sections) }
     private var fetchedObjectsSet: Set<ObjectType> { Set(fetchedObjects ?? []) }
     
     public override var sections: [DataSourceSectionInfo]? { _sections }
     public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
     
-    public init(_ sections: [Section<ObjectType>] = []) {
+    public init(_ sections: [Section] = []) {
         super.init()
         if !sections.isEmpty { appendSections(sections) }
     }
@@ -65,7 +65,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         _sections[safe: sectionIndex]?._objects ?? []
     }
     
-    public func objects(atSection section: Section<ObjectType>) -> [ObjectType] {
+    public func objects(atSection section: Section) -> [ObjectType] {
         section._objects
     }
     
@@ -73,15 +73,15 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         section(containingObject: object)?._objects ?? []
     }
     
-    public func section(containingObject object: ObjectType) -> Section<ObjectType>? {
+    public func section(containingObject object: ObjectType) -> Section? {
         _sections.first { $0.contains(object: object) }
     }
     
-    public func firstObject(inSection section: Section<ObjectType>?) -> ObjectType? {
+    public func firstObject(inSection section: Section?) -> ObjectType? {
         section?._objects.first
     }
     
-    public func lastObject(inSection section: Section<ObjectType>?) -> ObjectType? {
+    public func lastObject(inSection section: Section?) -> ObjectType? {
         section?._objects.last
     }
     
@@ -93,11 +93,11 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         indexPath(for: object)?.row
     }
     
-    public func indexOfSection(_ section: Section<ObjectType>) -> Int? {
+    public func indexOfSection(_ section: Section) -> Int? {
         _sections.firstIndex(of: section)
     }
     
-    public func appendObjects(_ objects: [ObjectType], to section: Section<ObjectType>?) {
+    public func appendObjects(_ objects: [ObjectType], to section: Section?) {
         if let section, let sectionIndex = indexOfSection(section) {
             let objectsToAppend = getOnlyNewObjects(objects)
             if !objectsToAppend.isEmpty {
@@ -169,13 +169,13 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     public func deleteObjects(_ objects: [ObjectType]) {
-        let objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section<ObjectType>: [ObjectType]]()) { result, object in
+        let objectsToDeleteDictionary = objects.uniqued().reduce(into: [Section: [ObjectType]]()) { result, object in
             if let section = section(containingObject: object) {
                 result[section, default: []].append(object)
             }
         }
         var indexesOfDeletedObjects: [Int: [(object: ObjectType, index: Int)]] = [:]
-        var sectionsForDelete: [Int: Section<ObjectType>] = [:]
+        var sectionsForDelete: [Int: Section] = [:]
         
         objectsToDeleteDictionary.forEach { section, objects in
             if let sectionIndex = indexOfSection(section) {
@@ -310,7 +310,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func appendSections(_ sections: [Section<ObjectType>]) {
+    public func appendSections(_ sections: [Section]) {
         let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
             _sections.append(contentsOf: sectionsWithNewObjects)
@@ -323,7 +323,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func insertSections(_ sections: [Section<ObjectType>], beforeSection: Section<ObjectType>) {
+    public func insertSections(_ sections: [Section], beforeSection: Section) {
         let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
             if let beforeSectionIndex = indexOfSection(beforeSection) {
@@ -338,7 +338,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func insertSections(_ sections: [Section<ObjectType>], afterSection: Section<ObjectType>) {
+    public func insertSections(_ sections: [Section], afterSection: Section) {
         let sectionsWithNewObjects = filterSectionsForExistedObjects(in: sections)
         if !sectionsWithNewObjects.isEmpty {
             if let afterSectionIndex = indexOfSection(afterSection) {
@@ -353,10 +353,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func deleteSections(_ sections: [Section<ObjectType>]) {
+    public func deleteSections(_ sections: [Section]) {
         let existingSections = Set(sections).intersection(sectionsSet)
         if !existingSections.isEmpty {
-            let sectionsForRemove = existingSections.reduce(into: [Int: Section<ObjectType>]()) { result, section in
+            let sectionsForRemove = existingSections.reduce(into: [Int: Section]()) { result, section in
                 if let sectionIndex = indexOfSection(section) {
                     result[sectionIndex] = section
                 }
@@ -371,7 +371,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func moveSection(_ section: Section<ObjectType>, beforeSection: Section<ObjectType>) {
+    public func moveSection(_ section: Section, beforeSection: Section) {
         if let sectionIndex = indexOfSection(section),
            let beforeSectionIndex = indexOfSection(beforeSection) {
             _sections.remove(at: sectionIndex)
@@ -385,7 +385,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func moveSection(_ section: Section<ObjectType>, afterSection: Section<ObjectType>) {
+    public func moveSection(_ section: Section, afterSection: Section) {
         if let sectionIndex = indexOfSection(section),
            let afterSectionIndex = indexOfSection(afterSection) {
             _sections.remove(at: sectionIndex)
@@ -403,7 +403,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public func reloadSections(_ sections: [Section<ObjectType>]) {
+    public func reloadSections(_ sections: [Section]) {
         let existingSections = Set(sections).intersection(sectionsSet)
         if !existingSections.isEmpty {
             performDelegateUpdate { [weak self] in
@@ -423,9 +423,9 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         return objects.filter { newObjects.contains($0) }
     }
     
-    private func filterSectionsForExistedObjects(in sections: [Section<ObjectType>]) -> [Section<ObjectType>] {
+    private func filterSectionsForExistedObjects(in sections: [Section]) -> [Section] {
         var tempSet = Set<ObjectType>()
-        return sections.reduce(into: [Section<ObjectType>]()) { result, section in
+        return sections.reduce(into: [Section]()) { result, section in
             let objects = getOnlyNewObjects(section._objects)
             section._objects = objects.filter { !tempSet.contains($0) }
             tempSet = tempSet.union(objects)
@@ -444,7 +444,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
-    public class Section<ObjectType: Hashable>: Hashable, DataSourceSectionInfo {
+    public class Section: Hashable, DataSourceSectionInfo {
         public private(set) var sender: Any?
         public private(set) var name: String
         public private(set) var indexTitle: String?
@@ -518,7 +518,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             deleteObjects([object])
         }
         
-        public static func == (lhs: Section<ObjectType>, rhs: Section<ObjectType>) -> Bool {
+        public static func == (lhs: Section, rhs: Section) -> Bool {
             lhs.hashValue == rhs.hashValue
         }
         
