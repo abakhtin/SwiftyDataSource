@@ -501,12 +501,14 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
         
         fileprivate func moveObject(_ object: ObjectType, afterObject: ObjectType) {
-            if let afterObjectIndex = indexOfObject(afterObject) {
+            if contains(object: afterObject) {
                 _objects.removeAll { $0 == object }
-                if afterObjectIndex + 1 == numberOfObjects {
-                    _objects.append(object)
-                } else {
-                    _objects.insert(object, at: afterObjectIndex + 1)
+                if let afterObjectIndex = indexOfObject(afterObject) {
+                    if afterObjectIndex + 1 == numberOfObjects {
+                        _objects.append(object)
+                    } else {
+                        _objects.insert(object, at: afterObjectIndex + 1)
+                    }
                 }
             }
         }
