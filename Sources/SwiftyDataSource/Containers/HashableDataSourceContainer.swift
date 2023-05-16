@@ -16,47 +16,52 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public override var sections: [DataSourceSectionInfo]? { _sections }
     public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
     
+    private lazy var taskExecutionQueue = DispatchQueue(label: String(describing: Self.self))
     private var isExecutingTask = false
     private var taskArray: [DispatchWorkItem] = []
     private var updateTask: DispatchWorkItem?
     
     private func executeNextTask() {
-        if !isExecutingTask {
-            if let updateTask {
-                isExecutingTask = true
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
-                    updateTask.perform()
-                    self.updateTask = nil
-                    self.isExecutingTask = false
-                    self.executeNextTask()
-                }
-            } else if let task = taskArray.first {
-                isExecutingTask = true
-                DispatchQueue.global(qos: .userInteractive).async { [weak self] in
-                    guard let self else { return }
-                    task.perform()
-                    DispatchQueue.main.async {
+        taskExecutionQueue.async { [weak self] in
+            guard let self else { return }
+            if !self.isExecutingTask {
+                if let updateTask {
+                    self.isExecutingTask = true
+                    updateTask.notify(queue: taskExecutionQueue) {
+                        self.updateTask = nil
+                        self.isExecutingTask = false
+                        self.executeNextTask()
+                    }
+                    DispatchQueue.main.async(execute: updateTask)
+                } else if let task = self.taskArray.first {
+                    self.isExecutingTask = true
+                    task.notify(queue: taskExecutionQueue) {
                         self.taskArray.removeFirst()
                         self.isExecutingTask = false
                         self.executeNextTask()
                     }
+                    taskExecutionQueue.async(execute: task)
                 }
             }
         }
     }
     
     private func addTask(_ task: @escaping () -> Void) {
-        taskArray.append(.init(block: task))
-        executeNextTask()
+        taskExecutionQueue.async { [weak self] in
+            guard let self else { return }
+            self.taskArray.append(.init(block: task))
+            self.executeNextTask()
+        }
     }
     
     private func setUpdateTask(_ task: @escaping () -> Void) {
-        updateTask = .init { [weak self] in
+        taskExecutionQueue.async { [weak self] in
             guard let self else { return }
-            self.delegate?.containerWillChangeContent(self)
-            task()
-            self.delegate?.containerDidChangeContent(self)
+            self.updateTask = .init {
+                self.delegate?.containerWillChangeContent(self)
+                task()
+                self.delegate?.containerDidChangeContent(self)
+            }
         }
     }
     
