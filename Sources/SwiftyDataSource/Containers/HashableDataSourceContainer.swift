@@ -27,7 +27,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             if !self.isExecutingTask {
                 if let updateTask {
                     self.isExecutingTask = true
-                    updateTask.notify(queue: taskExecutionQueue) {
+                    updateTask.notify(queue: self.taskExecutionQueue) {
                         self.updateTask = nil
                         self.isExecutingTask = false
                         self.executeNextTask()
@@ -35,12 +35,12 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
                     DispatchQueue.main.async(execute: updateTask)
                 } else if let task = self.taskArray.first {
                     self.isExecutingTask = true
-                    task.notify(queue: taskExecutionQueue) {
+                    task.notify(queue: self.taskExecutionQueue) {
                         self.taskArray.removeFirst()
                         self.isExecutingTask = false
                         self.executeNextTask()
                     }
-                    taskExecutionQueue.async(execute: task)
+                    self.taskExecutionQueue.async(execute: task)
                 }
             }
         }
