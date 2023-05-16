@@ -60,6 +60,13 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    public func performAfterUpdates(_ block: @escaping (_ container: HashableDataSourceContainer<ObjectType>) -> Void) {
+        addTask { [weak self] in
+            guard let self else { return }
+            block(self)
+        }
+    }
+    
     public init(_ sections: [Section] = []) {
         super.init()
         if !sections.isEmpty { appendSections(sections) }
