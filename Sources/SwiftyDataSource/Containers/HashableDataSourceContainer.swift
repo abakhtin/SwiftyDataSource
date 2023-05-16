@@ -16,7 +16,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public override var sections: [DataSourceSectionInfo]? { _sections }
     public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
     
-    private lazy var taskExecutionQueue = DispatchQueue(label: String(describing: Self.self))
+    private lazy var taskExecutionQueue = DispatchQueue(label: String(describing: Self.self) + UUID().uuidString)
     private var isExecutingTask = false
     private var taskArray: [DispatchWorkItem] = []
     private var updateTask: DispatchWorkItem?
