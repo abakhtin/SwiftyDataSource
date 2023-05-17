@@ -16,7 +16,7 @@
 		1D7B8F472004D1B100400613 /* SwiftyDataSource.h in Headers */ = {isa = PBXBuildFile; fileRef = 1D7B8F452004D1B100400613 /* SwiftyDataSource.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		880AE72C2A12076300DA4634 /* HashableDataSourceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880AE72B2A12076300DA4634 /* HashableDataSourceContainerTests.swift */; };
 		886E98592A0F6A3D003192A9 /* HashableDataSourceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */; };
-		88F30D002A1400ED007F0B36 /* OperationsPipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F30CFF2A1400ED007F0B36 /* OperationsPipe.swift */; };
+		88F30D002A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F30CFF2A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift */; };
 		A9F1277F28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */; };
 		B81D742622402FD300707EA2 /* MapViewDataSourceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D742522402FD300707EA2 /* MapViewDataSourceDelegate.swift */; };
 		B83ED0E7231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B83ED0E6231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift */; };
@@ -83,7 +83,7 @@
 		1D7B8F462004D1B100400613 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		880AE72B2A12076300DA4634 /* HashableDataSourceContainerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashableDataSourceContainerTests.swift; sourceTree = "<group>"; };
 		886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashableDataSourceContainer.swift; sourceTree = "<group>"; };
-		88F30CFF2A1400ED007F0B36 /* OperationsPipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsPipe.swift; sourceTree = "<group>"; };
+		88F30CFF2A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourceContainerOperationsQueue.swift; sourceTree = "<group>"; };
 		A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataSourceContainer+Matchable.swift"; sourceTree = "<group>"; };
 		B81D742522402FD300707EA2 /* MapViewDataSourceDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewDataSourceDelegate.swift; sourceTree = "<group>"; };
 		B83ED0E6231EDB0C0045BAA7 /* UIDocumentInteractionControllerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIDocumentInteractionControllerPresenter.swift; sourceTree = "<group>"; };
@@ -198,6 +198,7 @@
 				04AE9D6024CF5A5600F65F6E /* DataSourceContainer+IdentifiableProtocol.swift */,
 				A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */,
 				886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */,
+				88F30CFF2A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift */,
 			);
 			path = Containers;
 			sourceTree = "<group>";
@@ -208,7 +209,6 @@
 				B8F4AC152267869100F85471 /* FoundationExtensions */,
 				B8F4AC072267869100F85471 /* UIKitExtensions */,
 				B8F4AC1A2267869100F85471 /* ViewControllersHelpers */,
-				88F30CFF2A1400ED007F0B36 /* OperationsPipe.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -440,7 +440,7 @@
 				886E98592A0F6A3D003192A9 /* HashableDataSourceContainer.swift in Sources */,
 				B8F4AC2A2267869100F85471 /* NSFetchRequest+Sorting.swift in Sources */,
 				B8F4AC202267869100F85471 /* UIImage+String.swift in Sources */,
-				88F30D002A1400ED007F0B36 /* OperationsPipe.swift in Sources */,
+				88F30D002A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift in Sources */,
 				FA91B560292250B90007E7E8 /* HasBackgroundView.swift in Sources */,
 				B8F4AC2C2267869100F85471 /* UserDefaults+Subscript.swift in Sources */,
 				B8A9FE7622E5D421000E3DDC /* String+digitsOnly.swift in Sources */,

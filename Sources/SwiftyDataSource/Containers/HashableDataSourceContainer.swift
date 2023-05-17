@@ -9,7 +9,7 @@
 import Foundation
 
 public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContainer<ObjectType> {
-    private lazy var operationsPipe = OperationsPipe()
+    private lazy var operationsPipe = DataSourceContainerOperationsQueue()
    
     private var _sections: [Section] = []
     private var sectionsSet: Set<Section> { Set(_sections) }
@@ -19,9 +19,9 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
     
     public func performAfterUpdates(_ block: @escaping (_ container: HashableDataSourceContainer<ObjectType>) -> Void) {
-        operationsPipe.executeOperation(.init(operation: {
+        operationsPipe.executeOperation {
             block(self)
-        }))
+        }
     }
     
     public init(_ sections: [Section] = []) {
@@ -464,18 +464,11 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     }
     
     private func performContainerUpdate(update: @escaping () -> Void, delegateUpdate: @escaping () -> Void) {
-        operationsPipe.executeOperation(
-            .init(
-                operation: update,
-                operationQueue: .global(qos: .userInteractive),
-                completion: {
-                    self.delegate?.containerWillChangeContent(self)
-                    delegateUpdate()
-                    self.delegate?.containerDidChangeContent(self)
-                },
-                completionQueue: .main
-            )
-        )
+        operationsPipe.executeOperation(update) {
+            self.delegate?.containerWillChangeContent(self)
+            delegateUpdate()
+            self.delegate?.containerDidChangeContent(self)
+        }
     }
     
     public class Section: Hashable, DataSourceSectionInfo {
