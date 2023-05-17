@@ -9,30 +9,54 @@
 import Foundation
 
 public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContainer<ObjectType> {
-    private lazy var operationsPipe = OperationsPipe()
-   
-    private var _sections: [Section] = []
-    private var sectionsSet: Set<Section> { Set(_sections) }
-    private var fetchedObjectsSet: Set<ObjectType> { Set(fetchedObjects ?? []) }
     
-    public override var sections: [DataSourceSectionInfo]? { _sections }
-    public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
+    // MARK: - Container Update Queue
     
-    public func performAfterUpdates(_ block: @escaping (_ container: HashableDataSourceContainer<ObjectType>) -> Void) {
-        operationsPipe.executeOperation(.init(operation: {
-            block(self)
-        }))
+    private lazy var operationsQueue = DataSourceContainerOperationsQueue()
+    
+    private func performContainerUpdate(update: @escaping () -> Void, delegateUpdate: @escaping () -> Void) {
+        operationsQueue.executeOperation(update) {
+            self.delegate?.containerWillChangeContent(self)
+            delegateUpdate()
+            self.delegate?.containerDidChangeContent(self)
+        }
     }
+   
+    // MARK: - Storage
+    
+    private var _sections: [Section] = []
+    
+    // MARK: - Initializer
     
     public init(_ sections: [Section] = []) {
         super.init()
         if !sections.isEmpty { appendSections(sections) }
     }
     
+    // MARK: - Computed Sets
+    
+    private var sectionsSet: Set<Section> { Set(_sections) }
+    private var fetchedObjectsSet: Set<ObjectType> { Set(fetchedObjects ?? []) }
+    
+    // MARK: - DataSourceContainer Interface & implementation
+    
+    /// Retrieves an array of section information in the container.
+    /// - Returns: An array of `DataSourceSectionInfo` representing the sections in the container.
+    public override var sections: [DataSourceSectionInfo]? { _sections }
+    /// Retrieves an array of objects fetched from the container.
+    /// - Returns: An array of `ObjectType` representing the fetched objects.
+    public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
+    
+    /// Retrieves the object at the specified index path.
+    /// - Parameter indexPath: The index path of the object.
+    /// - Returns: The object at the specified index path, or `nil` if the index path is out of bounds.
     public override func object(at indexPath: IndexPath) -> ObjectType? {
         _sections[safe: indexPath.section]?._objects[safe: indexPath.row]
     }
     
+    /// Retrieves the index path for the specified object.
+    /// - Parameter object: The object.
+    /// - Returns: The index path of the object, or `nil` if the object is not found.
     public override func indexPath(for object: ObjectType) -> IndexPath? {
         if let sectionWithObject = section(containingObject: object),
            let sectionIndex = indexOfSection(sectionWithObject),
@@ -43,6 +67,9 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Searches for an object in the container that satisfies the specified condition.
+    /// - Parameter block: A closure that takes an index path and an object as parameters and returns a Boolean value indicating whether the object satisfies the condition.
+    /// - Returns: The index path of the first object that satisfies the condition, or `nil` if no object is found.
     public override func search(_ block: (IndexPath, ObjectType) -> Bool) -> IndexPath? {
         var resultIndexPath: IndexPath?
         _sections.enumerated().forEach { sectionIndex, section in
@@ -57,6 +84,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         return resultIndexPath
     }
     
+    /// Enumerates through each object in the container and executes the specified closure.
+    /// - Parameter block: A closure that takes an index path and an object as parameters and performs an action.
     public override func enumerate(_ block: (IndexPath, ObjectType) -> Void) {
         _sections.enumerated().forEach { sectionIndex, section in
             section._objects.enumerated().forEach { objectIndex, object in
@@ -65,46 +94,93 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Retrieves the number of sections in the container.
+    /// - Returns: The number of sections in the container
     public override func numberOfSections() -> Int? { _sections.count }
     
+    /// Retrieves the number of items in the specified section.
+    /// - Parameter section: The section index.
+    /// - Returns: The number of items in the specified section, or `nil` if the section is invalid.
     public override func numberOfItems(in section: Int) -> Int? { _sections[safe: section]?.numberOfObjects }
     
+    // MARK: - Public HashableDataSourceContainer interface & implementation
+    
+    /// Performs the specified block of code after all pending updates have been applied to the container.
+    /// - Parameter block: The block of code to be executed.
+    ///                    It takes the `HashableDataSourceContainer` instance as its parameter.
+    public func performAfterUpdates(_ block: @escaping (_ container: HashableDataSourceContainer<ObjectType>) -> Void) {
+        operationsQueue.executeOperation {
+            block(self)
+        }
+    }
+    
+    /// Retrieves the objects in the specified section.
+    /// - Parameter sectionIndex: The index of the section.
+    /// - Returns: An array of objects in the specified section.
     public func objects(atSectionIndex sectionIndex: Int) -> [ObjectType] {
         _sections[safe: sectionIndex]?._objects ?? []
     }
     
+    /// Retrieves the objects in the specified section.
+    /// - Parameter section: The section.
+    /// - Returns: An array of objects in the specified section.
     public func objects(atSection section: Section) -> [ObjectType] {
         section._objects
     }
     
+    /// Retrieves the objects in the section containing the specified object.
+    /// - Parameter object: The object.
+    /// - Returns: An array of objects in the section containing the specified object.
     public func objects(atSectionContaining object: ObjectType) -> [ObjectType] {
         section(containingObject: object)?._objects ?? []
     }
     
+    /// Retrieves the section that contains the specified object.
+    /// - Parameter object: The object.
+    /// - Returns: The section that contains the specified object, or `nil` if the object is not found in any section.
     public func section(containingObject object: ObjectType) -> Section? {
         _sections.first { $0.contains(object: object) }
     }
     
+    /// Retrieves the first object in the specified section.
+    /// - Parameter section: The section.
+    /// - Returns: The first object in the section, or `nil` if the section is empty.
     public func firstObject(inSection section: Section?) -> ObjectType? {
         section?._objects.first
     }
     
+    /// Retrieves the last object in the specified section.
+    /// - Parameter section: The section.
+    /// - Returns: The last object in the section, or `nil` if the section is empty.
     public func lastObject(inSection section: Section?) -> ObjectType? {
         section?._objects.last
     }
     
+    /// Checks if the container contains the specified object.
+    /// - Parameter object: The object to be checked.
+    /// - Returns: `true` if the container contains the object, `false` otherwise.
     public func contains(_ object: ObjectType) -> Bool {
         fetchedObjectsSet.contains(object)
     }
     
+    /// Retrieves the index of the specified object.
+    /// - Parameter object: The object.
+    /// - Returns: The index of the object, or `nil` if the object is not found.
     public func indexOfObject(_ object: ObjectType) -> Int? {
         indexPath(for: object)?.row
     }
     
+    /// Retrieves the index of the specified section.
+    /// - Parameter section: The section.
+    /// - Returns: The index of the section, or `nil` if the section is not found.
     public func indexOfSection(_ section: Section) -> Int? {
         _sections.firstIndex(of: section)
     }
     
+    /// Appends the specified objects to the given section.
+    /// - Parameters:
+    ///   - objects: The objects to be appended.
+    ///   - section: The section to which the objects should be appended.
     public func appendObjects(_ objects: [ObjectType], to section: Section?) {
         var objectsCountBeforeUpdate: Int?
         var objectsToAppend = [ObjectType]()
@@ -123,6 +199,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Inserts the specified objects before the given object in the same section.
+    /// - Parameters:
+    ///   - objects: The objects to be inserted.
+    ///   - beforeObject: The object before which the new objects should be inserted.
     public func insertObjects(_ objects: [ObjectType], beforeObject: ObjectType) {
         var section: Section?
         var beforeObjectIndex: Int?
@@ -143,6 +223,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Inserts the specified objects after the given object in the same section.
+    /// - Parameters:
+    ///   - objects: The objects to be inserted.
+    ///   - afterObject: The object after which the new objects should be inserted.
     public func insertObjects(_ objects: [ObjectType], afterObject: ObjectType) {
         var section: Section?
         var afterObjectIndex: Int?
@@ -163,6 +247,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Deletes the specified objects from the container.
+    /// - Parameter objects: The objects to be deleted.
     public func deleteObjects(_ objects: [ObjectType]) {
         var indexesOfDeletedObjects = [Int: [(object: ObjectType, index: Int)]]()
         var sectionsForDelete = [Int: Section]()
@@ -205,6 +291,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Deletes all objects from the container.
     public func deleteAllObjects() {
         var sections = [Section]()
         performContainerUpdate {
@@ -217,6 +304,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Moves the specified object before another object in the same section.
+    /// - Parameters:
+    ///   - object: The object to be moved.
+    ///   - beforeObject: The object before which the specified object should be moved.
     public func moveObject(_ object: ObjectType, beforeObject: ObjectType) {
         var oldIndexPath: IndexPath?
         var newIndexPath: IndexPath?
@@ -244,6 +335,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Moves the specified object after another object in the same section.
+    /// - Parameters:
+    ///   - object: The object to be moved.
+    ///   - afterObject: The object after which the specified object should be moved.
     public func moveObject(_ object: ObjectType, afterObject: ObjectType) {
         var oldIndexPath: IndexPath?
         var newIndexPath: IndexPath?
@@ -272,6 +367,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Replaces an object with a new object in the container.
+    /// - Parameters:
+    ///   - object: The object to be replaced.
+    ///   - newObject: The new object to replace with.
     public func replaceObject(_ object: ObjectType, with newObject: ObjectType) {
         var indexPath: IndexPath?
         
@@ -289,6 +388,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Reloads the specified objects in the container.
+    /// - Parameter objects: The objects to be reloaded.
     public func reloadObjects(_ objects: [ObjectType]) {
         var existingObjects = Set<ObjectType>()
         
@@ -301,6 +402,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Reconfigures the specified objects in the container.
+    /// - Parameter objects: The objects to be reconfigured.
     public func reconfigureObjects(_ objects: [ObjectType]) {
         var existingObjects = Set<ObjectType>()
         
@@ -313,6 +416,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Appends the specified sections to the container.
+    /// - Parameter sections: The sections to be appended.
     public func appendSections(_ sections: [Section]) {
         var sectionsCountBeforeUpdate: Int?
         var sectionsToAppend = [Section]()
@@ -330,6 +435,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Inserts the specified sections before the given section.
+    /// - Parameters:
+    ///   - sections: The sections to be inserted.
+    ///   - beforeSection: The section before which the new sections should be inserted.
     public func insertSections(_ sections: [Section], beforeSection: Section) {
         var sectionsToInsert = [Section]()
         var beforeSectionIndex: Int?
@@ -348,6 +457,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Inserts the specified sections after the given section.
+    /// - Parameters:
+    ///   - sections: The sections to be inserted.
+    ///   - afterSection: The section after which the new sections should be inserted.
     public func insertSections(_ sections: [Section], afterSection: Section) {
         var sectionsToInsert = [Section]()
         var afterSectionIndex: Int?
@@ -370,6 +483,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Deletes the specified sections from the container.
+    /// - Parameter sections: The sections to be deleted.
     public func deleteSections(_ sections: [Section]) {
         var sectionsForRemove = [Int: Section]()
         
@@ -389,6 +504,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Moves a section before another section in the container.
+    /// - Parameters:
+    ///   - section: The section to be moved.
+    ///   - beforeSection: The section before which the specified section should be moved.
     public func moveSection(_ section: Section, beforeSection: Section) {
         var sectionIndex: Int?
         var beforeSectionIndex: Int?
@@ -406,6 +525,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Moves a section after another section in the container.
+    /// - Parameters:
+    ///   - section: The section to be moved.
+    ///   - afterSection: The section after which the specified section should be moved.
     public func moveSection(_ section: Section, afterSection: Section) {
         var sectionIndex: Int?
         var afterSectionIndex: Int?
@@ -427,6 +550,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
     }
     
+    /// Reloads the specified sections in the container.
+    /// - Parameter sections: The sections to be reloaded.
     public func reloadSections(_ sections: [Section]) {
         var existingSections = Set<Section>()
         
@@ -440,6 +565,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             }
         }
     }
+    
+    // MARK: - Helper methods
     
     private func filterExistingObjects(_ objects: [ObjectType]) -> [ObjectType] {
         let newObjects = Set(objects).subtracting(fetchedObjectsSet)
@@ -463,30 +590,27 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         return filteredSections
     }
     
-    private func performContainerUpdate(update: @escaping () -> Void, delegateUpdate: @escaping () -> Void) {
-        operationsPipe.executeOperation(
-            .init(
-                operation: update,
-                operationQueue: .global(qos: .userInteractive),
-                completion: {
-                    self.delegate?.containerWillChangeContent(self)
-                    delegateUpdate()
-                    self.delegate?.containerDidChangeContent(self)
-                },
-                completionQueue: .main
-            )
-        )
-    }
+    // MARK: - HashableDataSourceContainer Section Implementation
     
     public class Section: Hashable, DataSourceSectionInfo {
+        
+        // MARK: - DataSourceSectionInfo protocol implementation
+        
         public private(set) var sender: Any?
         public private(set) var name: String
         public private(set) var indexTitle: String?
         public var numberOfObjects: Int { _objects.count }
         public var objects: [Any]? { _objects }
         
+        // MARK: - Storage
+        
         fileprivate var _objects: [ObjectType] = []
+        
+        // MARK: - Computed Set
+        
         fileprivate var objectsSet: Set<ObjectType> { Set(_objects) }
+        
+        // MARK: - Initialzier
         
         public init(sender: Any? = nil, name: String = .init(), indexTitle: String? = nil, objects: [ObjectType] = []) {
             self.sender = sender
@@ -494,6 +618,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             self.indexTitle = indexTitle
             self._objects = objects
         }
+        
+        // MARK: - Methods to interact with section
         
         fileprivate func contains(object: ObjectType) -> Bool {
             objectsSet.contains(object)
@@ -551,6 +677,8 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
             insertObjects([newObject], afterObject: object)
             deleteObjects([object])
         }
+        
+        // MARK: - Hashable implementation
         
         public static func == (lhs: Section, rhs: Section) -> Bool {
             lhs.hashValue == rhs.hashValue
