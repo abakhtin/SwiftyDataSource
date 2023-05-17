@@ -41,7 +41,7 @@ func object(at indexPath: IndexPath) -> T? { }
 4. ### HashableDataSourceContainer
 ---
 
-A generic class that represents a container for `Hashable` objects. It inherits from the `DataSourceContainer` class and provides the same object interaction as in `NSDiffableDataSource`.
+A generic class that represents a container for `Hashable` objects. It inherits from the `DataSourceContainer` class and provides the same object interaction interface as in `NSDiffableDataSource`.
 
 #### Initialization
 
