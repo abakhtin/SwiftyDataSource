@@ -9,6 +9,13 @@
 import Foundation
 
 class DataSourceContainerOperationsQueue {
+    func executeOperation(_ operation: @escaping () -> Void, onCompletion completion: (() -> Void)? = nil) {
+        operationsQueue.async {
+            self.operations.append((operation, completion))
+            self.executeNextTask()
+        }
+    }
+    
     private lazy var operationsQueue = DispatchQueue(label: String(describing: Self.self) + UUID().uuidString)
     
     private var operations: [(operation: () -> Void, completion: (() -> Void)?)] = []
@@ -32,12 +39,5 @@ class DataSourceContainerOperationsQueue {
             self.executeNextTask()
         }
         DispatchQueue.global(qos: .userInteractive).async(execute: task)
-    }
-    
-    func executeOperation(_ operation: @escaping () -> Void, onCompletion completion: (() -> Void)? = nil) {
-        operationsQueue.async {
-            self.operations.append((operation, completion))
-            self.executeNextTask()
-        }
     }
 }
