@@ -15,9 +15,11 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     private lazy var operationsQueue = DataSourceContainerOperationsQueue()
     
     private func performContainerUpdate(update: @escaping () -> Void, delegateUpdate: @escaping () -> Void) {
+        sectionsBackup = _sections
         operationsQueue.executeOperation(update) {
             self.delegate?.containerWillChangeContent(self)
             delegateUpdate()
+            self.sectionsBackup = self._sections
             self.delegate?.containerDidChangeContent(self)
         }
     }
@@ -25,6 +27,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     // MARK: - Storage
     
     private var _sections: [Section] = []
+    private var sectionsBackup: [Section] = []
     
     // MARK: - Initializer
     
@@ -35,23 +38,23 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     // MARK: - Computed Sets
     
-    private var sectionsSet: Set<Section> { Set(_sections) }
+    private var sectionsSet: Set<Section> { Set(sectionsBackup) }
     private var fetchedObjectsSet: Set<ObjectType> { Set(fetchedObjects ?? []) }
     
     // MARK: - DataSourceContainer Interface & implementation
     
     /// Retrieves an array of section information in the container.
     /// - Returns: An array of `DataSourceSectionInfo` representing the sections in the container.
-    public override var sections: [DataSourceSectionInfo]? { _sections }
+    public override var sections: [DataSourceSectionInfo]? { sectionsBackup }
     /// Retrieves an array of objects fetched from the container.
     /// - Returns: An array of `ObjectType` representing the fetched objects.
-    public override var fetchedObjects: [ObjectType]? { _sections.flatMap { $0._objects } }
+    public override var fetchedObjects: [ObjectType]? { sectionsBackup.flatMap { $0._objects } }
     
     /// Retrieves the object at the specified index path.
     /// - Parameter indexPath: The index path of the object.
     /// - Returns: The object at the specified index path, or `nil` if the index path is out of bounds.
     public override func object(at indexPath: IndexPath) -> ObjectType? {
-        _sections[safe: indexPath.section]?._objects[safe: indexPath.row]
+        sectionsBackup[safe: indexPath.section]?._objects[safe: indexPath.row]
     }
     
     /// Retrieves the index path for the specified object.
@@ -72,7 +75,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     /// - Returns: The index path of the first object that satisfies the condition, or `nil` if no object is found.
     public override func search(_ block: (IndexPath, ObjectType) -> Bool) -> IndexPath? {
         var resultIndexPath: IndexPath?
-        _sections.enumerated().forEach { sectionIndex, section in
+        sectionsBackup.enumerated().forEach { sectionIndex, section in
             section._objects.enumerated().forEach { objectIndex, object in
                 let indexPath = IndexPath(row: objectIndex, section: sectionIndex)
                 if block(indexPath, object) {
@@ -87,7 +90,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     /// Enumerates through each object in the container and executes the specified closure.
     /// - Parameter block: A closure that takes an index path and an object as parameters and performs an action.
     public override func enumerate(_ block: (IndexPath, ObjectType) -> Void) {
-        _sections.enumerated().forEach { sectionIndex, section in
+        sectionsBackup.enumerated().forEach { sectionIndex, section in
             section._objects.enumerated().forEach { objectIndex, object in
                 block(IndexPath(row: objectIndex, section: sectionIndex), object)
             }
@@ -96,12 +99,12 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     
     /// Retrieves the number of sections in the container.
     /// - Returns: The number of sections in the container
-    public override func numberOfSections() -> Int? { _sections.count }
+    public override func numberOfSections() -> Int? { sectionsBackup.count }
     
     /// Retrieves the number of items in the specified section.
     /// - Parameter section: The section index.
     /// - Returns: The number of items in the specified section, or `nil` if the section is invalid.
-    public override func numberOfItems(in section: Int) -> Int? { _sections[safe: section]?.numberOfObjects }
+    public override func numberOfItems(in section: Int) -> Int? { sectionsBackup[safe: section]?.numberOfObjects }
     
     // MARK: - Public HashableDataSourceContainer interface & implementation
     
@@ -118,7 +121,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     /// - Parameter sectionIndex: The index of the section.
     /// - Returns: An array of objects in the specified section.
     public func objects(atSectionIndex sectionIndex: Int) -> [ObjectType] {
-        _sections[safe: sectionIndex]?._objects ?? []
+        sectionsBackup[safe: sectionIndex]?._objects ?? []
     }
     
     /// Retrieves the objects in the specified section.
@@ -139,7 +142,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     /// - Parameter object: The object.
     /// - Returns: The section that contains the specified object, or `nil` if the object is not found in any section.
     public func section(containingObject object: ObjectType) -> Section? {
-        _sections.first { $0.contains(object: object) }
+        sectionsBackup.first { $0.contains(object: object) }
     }
     
     /// Retrieves the first object in the specified section.
@@ -174,7 +177,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     /// - Parameter section: The section.
     /// - Returns: The index of the section, or `nil` if the section is not found.
     public func indexOfSection(_ section: Section) -> Int? {
-        _sections.firstIndex(of: section)
+        sectionsBackup.firstIndex(of: section)
     }
     
     /// Appends the specified objects to the given section.
@@ -295,7 +298,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
     public func deleteAllObjects() {
         var sections = [Section]()
         performContainerUpdate {
-            sections = self._sections
+            sections = self.sectionsBackup
             self._sections = []
         } delegateUpdate: {
             sections.enumerated().forEach { index, section in
