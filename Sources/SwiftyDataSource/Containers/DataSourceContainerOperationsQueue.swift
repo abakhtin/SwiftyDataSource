@@ -11,33 +11,19 @@ import Foundation
 class DataSourceContainerOperationsQueue {
     func executeOperation(_ operation: @escaping () -> Void, onCompletion completion: (() -> Void)? = nil) {
         operationsQueue.async {
-            self.operations.append((operation, completion))
-            self.executeNextTask()
+            operation()
+            let semaphore = DispatchSemaphore(value: .zero)
+            if let completion {
+                DispatchQueue.main.async {
+                    completion()
+                    semaphore.signal()
+                }
+            } else {
+                semaphore.signal()
+            }
+            semaphore.wait()
         }
     }
     
-    private lazy var operationsQueue = DispatchQueue(label: String(describing: Self.self) + UUID().uuidString)
-    
-    private var operations: [(operation: () -> Void, completion: (() -> Void)?)] = []
-    
-    private var isExecutingTask = false
-    
-    private func executeNextTask() {
-        guard !isExecutingTask, !operations.isEmpty else { return }
-        isExecutingTask = true
-        let operation = operations.removeFirst()
-        let task = DispatchWorkItem(block: operation.operation)
-        let completion: DispatchWorkItem
-        if let onCompletion = operation.completion {
-            completion = .init(block: onCompletion)
-            task.notify(queue: .main, execute: completion)
-        } else {
-            completion = task
-        }
-        completion.notify(queue: operationsQueue) {
-            self.isExecutingTask = false
-            self.executeNextTask()
-        }
-        DispatchQueue.global(qos: .userInteractive).async(execute: task)
-    }
+    private lazy var operationsQueue = DispatchQueue(label: String(describing: Self.self) + UUID().uuidString, qos: .userInteractive)
 }
