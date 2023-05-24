@@ -15,6 +15,7 @@
 		1D1F7FCA2024872F006B87D8 /* SwiftyDataSource.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D7B8F422004D1B100400613 /* SwiftyDataSource.framework */; };
 		1D7B8F472004D1B100400613 /* SwiftyDataSource.h in Headers */ = {isa = PBXBuildFile; fileRef = 1D7B8F452004D1B100400613 /* SwiftyDataSource.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		880AE72C2A12076300DA4634 /* HashableDataSourceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 880AE72B2A12076300DA4634 /* HashableDataSourceContainerTests.swift */; };
+		8848E9212A1E056B008281C0 /* ExpandableCellsHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8848E9202A1E056B008281C0 /* ExpandableCellsHandler.swift */; };
 		886E98592A0F6A3D003192A9 /* HashableDataSourceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */; };
 		88F30D002A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F30CFF2A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift */; };
 		A9F1277F28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */; };
@@ -82,6 +83,7 @@
 		1D7B8F452004D1B100400613 /* SwiftyDataSource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SwiftyDataSource.h; sourceTree = "<group>"; };
 		1D7B8F462004D1B100400613 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		880AE72B2A12076300DA4634 /* HashableDataSourceContainerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashableDataSourceContainerTests.swift; sourceTree = "<group>"; };
+		8848E9202A1E056B008281C0 /* ExpandableCellsHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpandableCellsHandler.swift; sourceTree = "<group>"; };
 		886E98582A0F6A3D003192A9 /* HashableDataSourceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashableDataSourceContainer.swift; sourceTree = "<group>"; };
 		88F30CFF2A1400ED007F0B36 /* DataSourceContainerOperationsQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourceContainerOperationsQueue.swift; sourceTree = "<group>"; };
 		A9F1277E28E4433C00EF9C38 /* DataSourceContainer+Matchable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataSourceContainer+Matchable.swift"; sourceTree = "<group>"; };
@@ -227,6 +229,7 @@
 				B84F3C8921CAFE1600489349 /* TableViewDataSourceDelegate.swift */,
 				B84F3C8A21CAFE1600489349 /* DataSource.swift */,
 				FA91B55F292250B90007E7E8 /* HasBackgroundView.swift */,
+				8848E9202A1E056B008281C0 /* ExpandableCellsHandler.swift */,
 			);
 			path = DataSources;
 			sourceTree = "<group>";
@@ -429,6 +432,7 @@
 				B84F3CA521CAFE1600489349 /* DataSourceViews.swift in Sources */,
 				B84F3CA221CAFE1600489349 /* CollectionViewDataSource.swift in Sources */,
 				B84F3CA721CAFE1600489349 /* DataSource.swift in Sources */,
+				8848E9212A1E056B008281C0 /* ExpandableCellsHandler.swift in Sources */,
 				B8F4AC1D2267869100F85471 /* UITableViewCell+Position.swift in Sources */,
 				B88E0E9D27DFD283001705FE /* ChildConfigurable.swift in Sources */,
 				B8BEC0662315864C0028439E /* FilterableDataSourceContainer.swift in Sources */,

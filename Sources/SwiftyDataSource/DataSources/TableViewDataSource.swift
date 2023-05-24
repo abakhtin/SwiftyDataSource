@@ -29,6 +29,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, WithExpandable
 
     // MARK: Public properties
     
+    private var expandableCellsHandler: ExpandableCellsHandlerProtocol?
+    
     public var container: DataSourceContainer<ObjectType>? {
         didSet {
             container?.delegate = self
@@ -39,8 +41,10 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, WithExpandable
     
     public var tableView: UITableView? {
         didSet {
-            tableView?.dataSource = self
-            tableView?.delegate = self
+            guard let tableView else { return }
+            tableView.dataSource = self
+            tableView.delegate = self
+            expandableCellsHandler = ExpandableCellsHandler(tableView: tableView)
             showNoDataViewIfNeeded()
         }
     }
@@ -95,7 +99,7 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, WithExpandable
             cell.accessoryType = accessoryType
         }
         if let expandableCell = cell as? DataSourceExpandable {
-            expandableCell.setExpanded(value: expandedCells.contains(indexPath))
+            expandableCell.setExpanded(value: expandableCellsHandler?.isCellExpanded(at: indexPath) == true)
         }
         delegate?.dataSource(self, setupCell: cell, at: indexPath)
         return cell
@@ -134,22 +138,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, WithExpandable
     
     // MARK: Expanding
     
-    private var expandedCells: Set<IndexPath> = []
-    
     public func invertExpanding(at indexPath: IndexPath, animationDuration: Double = 0.3) {
-        guard let expandableCell = tableView?.cellForRow(at: indexPath) as? UITableViewCell & DataSourceExpandable else { return }
-        tableView?.performBatchUpdates {
-            UIView.animate(withDuration: animationDuration) {
-                let isExpanded = self.expandedCells.contains(indexPath)
-                expandableCell.setExpanded(value: !isExpanded)
-                if isExpanded {
-                    self.expandedCells.remove(indexPath)
-                } else {
-                    self.expandedCells.insert(indexPath)
-                }
-                expandableCell.layoutIfNeeded()
-            }
-        }
+        expandableCellsHandler?.invertExpanding(at: indexPath, animationDuration: animationDuration)
     }
     
     // MARK: Need to implement all methods here to allow overriding in subclasses
@@ -311,72 +301,17 @@ extension TableViewDataSource: DataSourceContainerDelegate {
         switch (type) {
         case .insert:
             if let newIndexPath = newIndexPath {
-                var indexPathForInsert: IndexPath?
-                
-                if expandedCells.contains(newIndexPath) {
-                    expandedCells.formSymmetricDifference([newIndexPath])
-                    indexPathForInsert = IndexPath(row: newIndexPath.row + 1, section: newIndexPath.section)
-                }
-                
-                let expandedCellsAfterIndexPath = expandedCells.filter { $0.section == newIndexPath.section && $0.row > newIndexPath.row }
-                expandedCells.formSymmetricDifference(expandedCellsAfterIndexPath)
-                expandedCells.formUnion(expandedCellsAfterIndexPath.map { IndexPath(row: $0.row + 1, section: $0.section) })
-                
-                if let indexPathForInsert {
-                    expandedCells.formUnion([indexPathForInsert])
-                }
-                
+                expandableCellsHandler?.handleInsertRow(at: newIndexPath)
                 tableView?.insertRows(at: [newIndexPath], with: .fade)
             }
         case .delete:
             if let indexPath = indexPath {
-                if expandedCells.contains(indexPath) {
-                    expandedCells.formSymmetricDifference([indexPath])
-                }
-                let expandedCellsAfterIndexPath = expandedCells.filter { $0.section == indexPath.section && $0.row > indexPath.row }
-                expandedCells.formSymmetricDifference(expandedCellsAfterIndexPath)
-                expandedCells.formUnion(expandedCellsAfterIndexPath.map { IndexPath(row: $0.row - 1, section: $0.section) })
+                expandableCellsHandler?.handleDeleteRow(at: indexPath)
                 tableView?.deleteRows(at: [indexPath], with: .fade)
             }
         case .move:
             if let indexPath, let newIndexPath, indexPath != newIndexPath {
-                var indexPathForInsert: IndexPath?
-                
-                if expandedCells.contains(newIndexPath) {
-                    expandedCells.formSymmetricDifference([newIndexPath])
-                    if indexPath.section == newIndexPath.section {
-                        indexPathForInsert = IndexPath(row: indexPath.row < newIndexPath.row ? newIndexPath.row - 1 : newIndexPath.row + 1, section: newIndexPath.section)
-                    } else {
-                        indexPathForInsert = IndexPath(row: newIndexPath.row + 1, section: newIndexPath.section)
-                    }
-                }
-                
-                if expandedCells.contains(indexPath) {
-                    expandedCells.formSymmetricDifference([indexPath])
-                    expandedCells.formUnion([newIndexPath])
-                }
-                
-                if indexPath.section != newIndexPath.section {
-                    let expandedCellsAfterIndexPath = expandedCells.filter { $0.section == indexPath.section && $0.row > indexPath.row }
-                    expandedCells.formSymmetricDifference(expandedCellsAfterIndexPath)
-                    expandedCells.formUnion(expandedCellsAfterIndexPath.map { IndexPath(row: $0.row - 1, section: $0.section) })
-                    
-                    let expandedCellsAfterNewIndexPath = expandedCells.filter { $0.section == newIndexPath.section && $0.row > newIndexPath.row }
-                    expandedCells.formSymmetricDifference(expandedCellsAfterNewIndexPath)
-                    expandedCells.formUnion(expandedCellsAfterNewIndexPath.map { IndexPath(row: $0.row + 1, section: $0.section) })
-                } else if indexPath.section == newIndexPath.section, indexPath.row < newIndexPath.row {
-                    let expandedCellsAfterIndexPath = expandedCells.filter { $0.section == indexPath.section && $0.row > indexPath.row && $0.row < newIndexPath.row }
-                    expandedCells.formSymmetricDifference(expandedCellsAfterIndexPath)
-                    expandedCells.formUnion(expandedCellsAfterIndexPath.map { IndexPath(row: $0.row - 1, section: $0.section) })
-                } else {
-                    let expandedCellsAfterIndexPath = expandedCells.filter { $0.section == indexPath.section && $0.row < indexPath.row && $0.row > newIndexPath.row }
-                    expandedCells.formSymmetricDifference(expandedCellsAfterIndexPath)
-                    expandedCells.formUnion(expandedCellsAfterIndexPath.map { IndexPath(row: $0.row + 1, section: $0.section) })
-                }
-                
-                if let indexPathForInsert {
-                    expandedCells.formUnion([indexPathForInsert])
-                }
+                expandableCellsHandler?.handleMoveRow(from: indexPath, to: newIndexPath)
                 
                 tableView?.deleteRows(at: [indexPath], with: .fade)
                 tableView?.insertRows(at: [newIndexPath], with: .fade)
@@ -392,7 +327,7 @@ extension TableViewDataSource: DataSourceContainerDelegate {
                 tableView?.reloadRows(at: [indexPath], with: .fade)
             }
         case .reloadAll:
-            expandedCells.removeAll()
+            expandableCellsHandler?.reset()
             tableView?.reloadData()
         }
     }
@@ -400,20 +335,15 @@ extension TableViewDataSource: DataSourceContainerDelegate {
     public func container(_ container: DataSourceContainerProtocol, didChange sectionInfo: DataSourceSectionInfo, atSectionIndex sectionIndex: Int, for type: DataSourceObjectChangeType) {
         switch (type) {
         case .insert:
-            let expandedCellsAfterSection = expandedCells.filter { $0.section > sectionIndex }
-            expandedCells.formSymmetricDifference(expandedCellsAfterSection)
-            expandedCells.formUnion(expandedCellsAfterSection.map { IndexPath(row: $0.row, section: $0.section + 1) })
+            expandableCellsHandler?.handleInsertSection(at: sectionIndex)
             tableView?.insertSections(IndexSet(integer: sectionIndex), with: .fade)
         case .delete:
-            expandedCells.formSymmetricDifference(expandedCells.filter { $0.section == sectionIndex })
-            let expandedCellsAfterSection = expandedCells.filter { $0.section > sectionIndex }
-            expandedCells.formSymmetricDifference(expandedCellsAfterSection)
-            expandedCells.formUnion(expandedCellsAfterSection.map { IndexPath(row: $0.row, section: $0.section - 1) })
+            expandableCellsHandler?.handleDeleteSection(at: sectionIndex)
             tableView?.deleteSections(IndexSet(integer: sectionIndex), with: .fade)
         case .update:
             tableView?.reloadSections(IndexSet(integer: sectionIndex), with: .fade)
         default:
-            expandedCells.removeAll()
+            expandableCellsHandler?.reset()
             tableView?.reloadData()
         }
     }
