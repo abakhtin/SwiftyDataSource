@@ -80,10 +80,6 @@ open class MapViewDataSource<ObjectType>: NSObject, DataSource, MKMapViewDelegat
     //Not implemented
     public var refreshingView: UIView?
     
-    public func invertExpanding(at indexPath: IndexPath) {
-        fatalError()
-    }
-    
     // MARK: - Private
     
     private func reloadAnnotations() {

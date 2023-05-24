@@ -29,8 +29,10 @@ public protocol DataSource: DataSourceProtocol {
     func object(at indexPath: IndexPath) -> ObjectType?
     func showNoDataViewIfNeeded()
     func setNoDataView(hidden: Bool)
+}
 
-    func invertExpanding(at indexPath: IndexPath)
+public protocol WithExpandableCells {
+    func invertExpanding(at indexPath: IndexPath, animationDuration: Double)
 }
 
 extension DataSource {

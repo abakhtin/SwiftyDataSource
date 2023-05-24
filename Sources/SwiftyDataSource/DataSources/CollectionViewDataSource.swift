@@ -90,10 +90,6 @@ open class CollectionViewDataSource<ObjectType>: NSObject, DataSource, UICollect
         delegate?.dataSource(self, setupCell: cell, at: indexPath)
         return cell
     }
-
-    public func invertExpanding(at indexPath: IndexPath) {
-        fatalError("Not implemented")
-    }
     
     open func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard let collectionViewHeight = collectionView?.frame.size.height else { return }

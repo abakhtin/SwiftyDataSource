@@ -9,7 +9,7 @@
 #if os(iOS)
 import UIKit
 
-open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDataSource, UITableViewDelegate {
+open class TableViewDataSource<ObjectType>: NSObject, DataSource, WithExpandableCells, UITableViewDataSource, UITableViewDelegate {
 
     // MARK: Initializer
     
@@ -29,6 +29,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
 
     // MARK: Public properties
     
+    private var expandableCellsHandler: ExpandableCellsHandlerProtocol?
+    
     public var container: DataSourceContainer<ObjectType>? {
         didSet {
             container?.delegate = self
@@ -39,8 +41,10 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     
     public var tableView: UITableView? {
         didSet {
-            tableView?.dataSource = self
-            tableView?.delegate = self
+            guard let tableView else { return }
+            tableView.dataSource = self
+            tableView.delegate = self
+            expandableCellsHandler = ExpandableCellsHandler(tableView: tableView)
             showNoDataViewIfNeeded()
         }
     }
@@ -94,9 +98,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
            let accessoryType = delegate.dataSource(self, accessoryTypeFor: object, at: indexPath) {
             cell.accessoryType = accessoryType
         }
-        if var expandable = cell as? DataSourceExpandable {
-            expandable.setExpanded(value: expandedCells.firstIndex(of: indexPath) != nil)
-            cell.setNeedsUpdateConstraints()
+        if let expandableCell = cell as? DataSourceExpandable {
+            expandableCell.setExpanded(value: expandableCellsHandler?.isCellExpanded(at: indexPath) == true)
         }
         delegate?.dataSource(self, setupCell: cell, at: indexPath)
         return cell
@@ -135,24 +138,8 @@ open class TableViewDataSource<ObjectType>: NSObject, DataSource, UITableViewDat
     
     // MARK: Expanding
     
-    private var expandedCells: Set<IndexPath> = []
-    
-    public func invertExpanding(at indexPath: IndexPath) {
-        var expanded: Bool
-        if let index = expandedCells.firstIndex(of: indexPath) {
-            expandedCells.remove(at: index)
-            expanded = false
-        } else {
-            expandedCells.insert(indexPath)
-            expanded = true
-        }
-        if let cell = tableView?.cellForRow(at: indexPath),
-            var expandable = cell as? DataSourceExpandable {
-            expandable.setExpanded(value: expanded)
-            cell.setNeedsUpdateConstraints()
-        }
-        tableView?.beginUpdates()
-        tableView?.endUpdates()
+    public func invertExpanding(at indexPath: IndexPath, animationDuration: Double = 0.3) {
+        expandableCellsHandler?.invertExpanding(at: indexPath, animationDuration: animationDuration)
     }
     
     // MARK: Need to implement all methods here to allow overriding in subclasses
@@ -314,16 +301,20 @@ extension TableViewDataSource: DataSourceContainerDelegate {
         switch (type) {
         case .insert:
             if let newIndexPath = newIndexPath {
+                expandableCellsHandler?.handleInsertRow(at: newIndexPath)
                 tableView?.insertRows(at: [newIndexPath], with: .fade)
             }
         case .delete:
             if let indexPath = indexPath {
+                expandableCellsHandler?.handleDeleteRow(at: indexPath)
                 tableView?.deleteRows(at: [indexPath], with: .fade)
             }
         case .move:
             if let indexPath, let newIndexPath, indexPath != newIndexPath {
-                tableView?.deleteRows(at: [indexPath], with: UITableView.RowAnimation.none)
-                tableView?.insertRows(at: [newIndexPath], with: UITableView.RowAnimation.none)
+                expandableCellsHandler?.handleMoveRow(from: indexPath, to: newIndexPath)
+                
+                tableView?.deleteRows(at: [indexPath], with: .fade)
+                tableView?.insertRows(at: [newIndexPath], with: .fade)
             } else if let indexPath {
                 tableView?.reloadRows(at: [indexPath], with: .fade)
             }
@@ -336,6 +327,7 @@ extension TableViewDataSource: DataSourceContainerDelegate {
                 tableView?.reloadRows(at: [indexPath], with: .fade)
             }
         case .reloadAll:
+            expandableCellsHandler?.reset()
             tableView?.reloadData()
         }
     }
@@ -343,12 +335,15 @@ extension TableViewDataSource: DataSourceContainerDelegate {
     public func container(_ container: DataSourceContainerProtocol, didChange sectionInfo: DataSourceSectionInfo, atSectionIndex sectionIndex: Int, for type: DataSourceObjectChangeType) {
         switch (type) {
         case .insert:
+            expandableCellsHandler?.handleInsertSection(at: sectionIndex)
             tableView?.insertSections(IndexSet(integer: sectionIndex), with: .fade)
         case .delete:
+            expandableCellsHandler?.handleDeleteSection(at: sectionIndex)
             tableView?.deleteSections(IndexSet(integer: sectionIndex), with: .fade)
         case .update:
             tableView?.reloadSections(IndexSet(integer: sectionIndex), with: .fade)
         default:
+            expandableCellsHandler?.reset()
             tableView?.reloadData()
         }
     }

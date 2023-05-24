@@ -25,16 +25,14 @@ public protocol DataSourcePositionHandler {
     func configure(for position: UITableViewCellPosition)
 }
 
-public protocol DataSourceExpandable {
-    var expanded: Bool? { get set }
-    var closedContraints: [NSLayoutConstraint]! { get }
-    var expandedConstraints: [NSLayoutConstraint]! { get }
-    mutating func setExpanded(value: Bool)
+public protocol DataSourceExpandable: AnyObject {
+    var isExpanded: Bool { get set }
+    func setExpanded(value: Bool)
 }
 
 public extension DataSourceExpandable {
-    mutating func setExpanded(value: Bool) {
-        expanded = value
+    func setExpanded(value: Bool) {
+        isExpanded = value
     }
 }
 #endif
