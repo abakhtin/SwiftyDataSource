@@ -378,7 +378,7 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         var indexPath: IndexPath?
         
         performContainerUpdate {
-            if !self.contains(newObject),
+            if (!self.contains(newObject) || object.hashValue == newObject.hashValue),
                let sectionWithObject = self.section(containingObject: object),
                let sectionIndex = self.indexOfSection(sectionWithObject),
                let objectIndex = sectionWithObject.indexOfObject(object) {
@@ -657,7 +657,10 @@ public class HashableDataSourceContainer<ObjectType: Hashable>: DataSourceContai
         }
         
         fileprivate func deleteObjects(_ objects: [ObjectType]) {
-            _objects.removeAll { objects.contains($0) }
+            objects.forEach { object in
+                guard let index = _objects.firstIndex(of: object) else { return }
+                _objects.remove(at: index)
+            }
         }
         
         fileprivate func moveObject(_ object: ObjectType, beforeObject: ObjectType) {
